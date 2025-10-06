@@ -11,7 +11,7 @@ interface Equipo {
 }
 
 export default function PhonesComponents() {
-  const [equipos, setEquipos] = useState<Equipo[]>([
+  const [equipos] = useState<Equipo[]>([ //setEquipos
     { id: 1, modelo: "iPhone 15", marca: "Apple", precio: 25000, stock: 10, estado: "Disponible" },
     { id: 2, modelo: "Galaxy S23", marca: "Samsung", precio: 18000, stock: 15, estado: "Disponible" },
     // Más equipos de ejemplo
