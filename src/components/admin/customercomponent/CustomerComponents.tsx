@@ -10,7 +10,7 @@ interface Cliente {
 }
 
 export default function CustomerComponents() {
-  const [clientes, setClientes] = useState<Cliente[]>([
+  const [clientes] = useState<Cliente[]>([ //setClientes
     { id: 1, nombre: "Juan Pérez", email: "juan@mail.com", telefono: "6461234567", estado: "Activo" },
     { id: 2, nombre: "María López", email: "maria@mail.com", telefono: "6469876543", estado: "Activo" },
     // Más clientes de ejemplo

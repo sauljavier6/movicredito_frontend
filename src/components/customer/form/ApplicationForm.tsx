@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import { FaUpload, FaSpinner } from "react-icons/fa";
+import { FaSpinner } from "react-icons/fa";
 
 type Product = {
   ID_Catalogo_Equipo: number;
@@ -13,10 +13,10 @@ type Product = {
 
 type FormValues = {
   fullName: string;
-  email: string;
+  email: string; 
   phone: string;
   address: string;
-  idNumber: string; // DNI / RFC / CURP / SSN
+  idNumber: string;
   productId: number;
   downPayment: number;
   termMonths: number;
@@ -26,27 +26,32 @@ type FormValues = {
   agreeBlocking: boolean;
 };
 
-const schema = yup.object({
-  fullName: yup.string().required("Nombre completo es requerido"),
-  email: yup.string().email("Email inválido").required("Email requerido"),
-  phone: yup.string().required("Teléfono requerido"),
-  address: yup.string().required("Dirección requerida"),
-  idNumber: yup.string().required("Identificación requerida"),
-  productId: yup.number().required("Selecciona un equipo").typeError("Selecciona un equipo"),
-  downPayment: yup
-    .number()
-    .min(0, "El enganche no puede ser negativo")
-    .required("Ingresa el enganche"),
-  termMonths: yup
-    .number()
-    .oneOf([6, 12, 18, 24, 36], "Plazo inválido")
-    .required("Selecciona un plazo"),
-  monthlyIncome: yup.number().min(0, "Ingresos inválidos").required("Ingresa tus ingresos"),
-  // files optional but recommend at least idDocument
-  agreeBlocking: yup
-    .boolean()
-    .oneOf([true], "Debes aceptar que el dispositivo puede ser bloqueado por impago"),
-}).required();
+const schema: yup.ObjectSchema<FormValues> = yup
+  .object({
+    fullName: yup.string().required("Nombre completo es requerido"),
+    email: yup.string().email("Email inválido").required("Email requerido"),
+    phone: yup.string().required("Teléfono requerido"),
+    address: yup.string().required("Dirección requerida"),
+    idNumber: yup.string().required("Identificación requerida"),
+    productId: yup.number().required("Selecciona un equipo").typeError("Selecciona un equipo"),
+    downPayment: yup
+      .number()
+      .min(0, "El enganche no puede ser negativo")
+      .required("Ingresa el enganche"),
+    termMonths: yup
+      .number()
+      .oneOf([6, 12, 18, 24, 36], "Plazo inválido")
+      .required("Selecciona un plazo"),
+    monthlyIncome: yup.number().min(0, "Ingresos inválidos").required("Ingresa tus ingresos"),
+    idDocument: yup.mixed<FileList>().optional(),
+    incomeProof: yup.mixed<FileList>().optional(),
+    agreeBlocking: yup
+      .boolean()
+      .oneOf([true], "Debes aceptar que el dispositivo puede ser bloqueado por impago")
+      .required("Debes aceptar que el dispositivo puede ser bloqueado por impago"),
+  })
+  .required();
+
 
 const sampleProducts: Product[] = [
   { ID_Catalogo_Equipo: 1, Marca: "Xiaomi", Modelo: "Redmi Note 8", Precio_Venta: 4500 },
@@ -59,13 +64,7 @@ export default function ApplicationForm() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<FormValues>({
+  const {register,control,handleSubmit,reset,formState: { errors },} = useForm<FormValues>({
     resolver: yupResolver(schema),
     defaultValues: {
       fullName: "",
