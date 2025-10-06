@@ -1,6 +1,8 @@
 import { Outlet } from "react-router-dom";
 import { useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
+import { Link } from "react-router-dom";
+
 
 
 const AppLayout = () => {
@@ -29,17 +31,16 @@ const AppLayout = () => {
 
             {/* Navegación */}
             <div className="flex gap-6 text-white font-medium items-center">
-              <a href="/" className="hover:text-green-400 transition">Inicio</a>
-              <a href="/clientes" className="hover:text-green-400 transition">Clientes</a>
-              <a href="/catalogo" className="hover:text-green-400 transition">Catalogo</a>
-              <a href="/creditos" className="hover:text-green-400 transition">Créditos</a>
-              <a href="/reportes" className="hover:text-green-400 transition">Reportes</a>
+              <Link to="/" className="hover:text-green-400 transition">Inicio</Link>
+              <Link to="/admin/clientes" className="hover:text-green-400 transition">Clientes</Link>
+              <Link to="/admin/catalogo" className="hover:text-green-400 transition">Catalogo</Link>
+              <Link to="/admin/creditos" className="hover:text-green-400 transition">Créditos</Link>
+              <Link to="/admin/reportes" className="hover:text-green-400 transition">Reportes</Link>
 
-              {/* Icono o foto de usuario */}
               {!isLoggedIn ? (
-                <a href="/login" className="text-3xl hover:text-green-400 transition">
+                <Link to="/login" className="text-3xl hover:text-green-400 transition">
                   <FaUserCircle />
-                </a>
+                </Link>
               ) : (
                 <img
                   src={profileImage}
