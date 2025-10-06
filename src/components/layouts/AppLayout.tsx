@@ -4,7 +4,7 @@ import { FaUserCircle } from "react-icons/fa";
 
 
 const AppLayout = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn] = useState(false); //setIsLoggedIn
   const profileImage = "https://i.pravatar.cc/150?img=32";
 
 
