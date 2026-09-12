@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BellRing,
   Boxes,
+  ChevronRight,
   ClipboardCheck,
   CreditCard,
   History,
   LayoutDashboard,
+  LogOut,
   Menu,
   PackageSearch,
   Smartphone,
@@ -30,78 +32,94 @@ const navigation = [
 const AppLayout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const token = sessionStorage.getItem("movicredito_token");
+  const storedUser = sessionStorage.getItem("movicredito_user");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
+  if (!token) return <Navigate to="/login" replace />;
 
   const isActive = (to: string) =>
     to === "/admin" ? location.pathname === to : location.pathname.startsWith(to);
 
+  const logout = () => {
+    sessionStorage.removeItem("movicredito_token");
+    sessionStorage.removeItem("movicredito_user");
+    navigate("/login", { replace: true });
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 md:px-6">
+    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f]">
+      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-[72px] max-w-[1680px] items-center justify-between px-4 md:px-7">
           <Link to="/admin" className="flex items-center gap-3">
-            <img
-              src="/logo.jpg"
-              alt="MoviCrédito"
-              className="h-10 w-10 rounded-xl object-cover"
-            />
+            <img src="/logo.jpg" alt="MoviCrédito" className="h-10 w-10 rounded-xl object-cover" />
             <div>
-              <p className="font-bold tracking-tight">MoviCrédito</p>
-              <p className="text-xs text-slate-400">Administración</p>
+              <p className="font-semibold tracking-[-0.025em]">MoviCrédito</p>
+              <p className="text-[11px] text-black/35">Control Center</p>
             </div>
           </Link>
+
+          <div className="hidden items-center gap-3 md:flex">
+            <div className="text-right">
+              <p className="text-sm font-medium">{user?.fullName || "Administrador"}</p>
+              <p className="text-[11px] capitalize text-black/35">{user?.role || "usuario"}</p>
+            </div>
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
+              {(user?.fullName || "M").charAt(0).toUpperCase()}
+            </div>
+          </div>
 
           <button
             type="button"
             onClick={() => setMenuOpen((current) => !current)}
-            className="rounded-lg border border-slate-700 p-2 text-slate-200 md:hidden"
+            className="rounded-full border border-black/10 bg-white p-2.5 text-black/70 md:hidden"
             aria-label="Abrir menú"
           >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
         </div>
       </header>
 
-      <div className="mx-auto flex max-w-[1600px]">
+      <div className="mx-auto flex max-w-[1680px]">
         <aside
-          className={`${
-            menuOpen ? "block" : "hidden"
-          } fixed inset-x-0 top-16 z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-slate-800 bg-slate-950 p-4 md:sticky md:top-16 md:block md:h-[calc(100vh-4rem)] md:w-64 md:shrink-0 md:border-b-0 md:border-r md:p-4`}
+          className={`${menuOpen ? "block" : "hidden"} fixed inset-x-0 top-[72px] z-40 max-h-[calc(100vh-72px)] overflow-y-auto border-b border-black/5 bg-white p-4 md:sticky md:top-[72px] md:block md:h-[calc(100vh-72px)] md:w-72 md:shrink-0 md:border-b-0 md:border-r md:bg-[#f5f5f7] md:p-5`}
         >
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-black/30">Operación</p>
           <nav className="space-y-1">
             {navigation.map(({ to, label, icon: Icon }) => (
               <Link
                 key={to}
                 to={to}
                 onClick={() => setMenuOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
-                  isActive(to)
-                    ? "bg-emerald-500/15 text-emerald-400"
-                    : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                className={`group flex items-center justify-between rounded-2xl px-3.5 py-3 text-sm font-medium transition ${
+                  isActive(to) ? "bg-white text-black shadow-sm" : "text-black/50 hover:bg-white/70 hover:text-black"
                 }`}
               >
-                <Icon size={18} />
-                {label}
+                <span className="flex items-center gap-3">
+                  <Icon size={18} strokeWidth={1.8} />
+                  {label}
+                </span>
+                {isActive(to) && <ChevronRight size={15} className="text-black/30" />}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-6 border-t border-slate-800 pt-4">
-            <Link
-              to="/"
-              className="block rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-900 hover:text-white"
-            >
+          <div className="mt-7 border-t border-black/5 pt-5">
+            <Link to="/" className="block rounded-2xl px-3.5 py-3 text-sm text-black/45 transition hover:bg-white hover:text-black">
               Ver portal público
             </Link>
-            <Link
-              to="/login"
-              className="mt-1 block rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-900 hover:text-white"
+            <button
+              type="button"
+              onClick={logout}
+              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm text-black/45 transition hover:bg-white hover:text-black"
             >
-              Cerrar sesión
-            </Link>
+              <LogOut size={17} /> Cerrar sesión
+            </button>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1">
+        <main className="min-w-0 flex-1 bg-white md:rounded-tl-[32px]">
           <Outlet />
         </main>
       </div>
