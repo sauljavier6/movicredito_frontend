@@ -38,7 +38,9 @@ const labels: Record<CollectionItem["recommendedAction"], string> = {
 export default function CollectionsPage() {
   const [data, setData] = useState<PortfolioResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [queueingId, setQueueingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const token = sessionStorage.getItem("movicredito_token");
 
   const loadPortfolio = async () => {
@@ -56,6 +58,26 @@ export default function CollectionsPage() {
       setError((err as Error).message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const queueAction = async (creditId: string) => {
+    if (!token) return;
+    setQueueingId(creditId);
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch(`${API_URL}/api/collections/credits/${creditId}/device-action`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.message || "No fue posible generar la orden.");
+      setMessage(body.duplicate ? "La orden ya estaba pendiente o aprobada." : "Orden creada. Debe aprobarse antes de procesarse.");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setQueueingId(null);
     }
   };
 
@@ -80,6 +102,7 @@ export default function CollectionsPage() {
         </div>
 
         {error && <div className="mt-6 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+        {message && <div className="mt-6 rounded-2xl bg-green-50 px-4 py-3 text-sm text-green-700">{message}</div>}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Créditos evaluados" value={String(data?.summary.total ?? 0)} icon={<BellRing size={18} />} />
@@ -91,14 +114,30 @@ export default function CollectionsPage() {
         <div className="mt-6 overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-black/5">
           <div className="border-b border-black/5 px-6 py-5">
             <h2 className="font-semibold">Prioridad de cobranza</h2>
-            <p className="mt-1 text-xs text-black/40">Las acciones son recomendaciones operativas; no ejecutan un bloqueo físico por sí solas.</p>
+            <p className="mt-1 text-xs text-black/40">Crear una orden no bloquea el equipo: primero debe aprobarse y procesarse desde Órdenes de dispositivo.</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-left text-sm">
-              <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Atraso máx.</th><th className="px-6 py-4">Cuotas vencidas</th><th className="px-6 py-4">Monto vencido</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Acción</th></tr></thead>
+            <table className="w-full min-w-[980px] text-left text-sm">
+              <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Atraso máx.</th><th className="px-6 py-4">Cuotas vencidas</th><th className="px-6 py-4">Monto vencido</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Acción</th><th className="px-6 py-4 text-right">Orden</th></tr></thead>
               <tbody className="divide-y divide-black/5">
-                {atRisk.map((item) => <tr key={item.creditId}><td className="px-6 py-4 font-mono text-xs">{item.creditId}</td><td className="px-6 py-4 font-semibold">{item.maxDaysLate} días</td><td className="px-6 py-4">{item.overdueCount}</td><td className="px-6 py-4">${item.overdueAmount.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td><td className="px-6 py-4">${item.balance.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td><td className="px-6 py-4"><span className={`rounded-full px-3 py-1.5 text-xs font-medium ${item.recommendedAction === "lock" ? "bg-red-50 text-red-700" : item.recommendedAction === "restrict" ? "bg-amber-50 text-amber-700" : "bg-[#f5f5f7] text-black/60"}`}>{labels[item.recommendedAction]}</span></td></tr>)}
-                {!atRisk.length && <tr><td colSpan={6} className="px-6 py-12 text-center text-black/35">No hay créditos que requieran acción de cobranza.</td></tr>}
+                {atRisk.map((item) => (
+                  <tr key={item.creditId}>
+                    <td className="px-6 py-4 font-mono text-xs">{item.creditId}</td>
+                    <td className="px-6 py-4 font-semibold">{item.maxDaysLate} días</td>
+                    <td className="px-6 py-4">{item.overdueCount}</td>
+                    <td className="px-6 py-4">${item.overdueAmount.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-4">${item.balance.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td>
+                    <td className="px-6 py-4"><span className={`rounded-full px-3 py-1.5 text-xs font-medium ${item.recommendedAction === "lock" ? "bg-red-50 text-red-700" : item.recommendedAction === "restrict" ? "bg-amber-50 text-amber-700" : "bg-[#f5f5f7] text-black/60"}`}>{labels[item.recommendedAction]}</span></td>
+                    <td className="px-6 py-4 text-right">
+                      {(["restrict", "lock"] as string[]).includes(item.recommendedAction) ? (
+                        <button disabled={queueingId === item.creditId} onClick={() => void queueAction(item.creditId)} className="rounded-full bg-black px-3.5 py-2 text-xs font-medium text-white transition hover:bg-black/75 disabled:opacity-40">
+                          {queueingId === item.creditId ? "Creando…" : "Crear orden"}
+                        </button>
+                      ) : <span className="text-xs text-black/25">—</span>}
+                    </td>
+                  </tr>
+                ))}
+                {!atRisk.length && <tr><td colSpan={7} className="px-6 py-12 text-center text-black/35">No hay créditos que requieran acción de cobranza.</td></tr>}
               </tbody>
             </table>
           </div>
