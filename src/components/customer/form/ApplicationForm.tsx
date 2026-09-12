@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { ArrowRight, Check, ShieldCheck, Smartphone } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import { ArrowRight, Check, LoaderCircle, ShieldCheck, Smartphone } from "lucide-react";
+import type { CatalogProduct } from "../product/ProductCard";
 
 type FormValues = {
   fullName: string;
@@ -15,30 +17,52 @@ type FormValues = {
   agreeBlocking: boolean;
 };
 
-const products = [
-  { id: 1, name: "Samsung Galaxy A55", price: 8999 },
-  { id: 2, name: "Samsung Galaxy S24", price: 17999 },
-  { id: 3, name: "iPhone 15", price: 18999 },
-];
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 export default function ApplicationForm() {
+  const [searchParams] = useSearchParams();
+  const selectedProductId = Number(searchParams.get("productId") || 0);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>();
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormValues>({
+    defaultValues: { termMonths: 12, downPayment: 0 },
+  });
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const response = await fetch(`${API_URL}/api/products`);
+        if (!response.ok) throw new Error("No fue posible cargar los equipos.");
+        const data = await response.json();
+        const list = Array.isArray(data) ? data : [];
+        setProducts(list);
+        const preferred = list.find((product: CatalogProduct) => product.id === selectedProductId) ?? list[0];
+        if (preferred) setValue("productId", preferred.id);
+      } catch {
+        setProducts([]);
+      } finally {
+        setLoadingProducts(false);
+      }
+    }
+
+    void loadProducts();
+  }, [selectedProductId, setValue]);
 
   const onSubmit = async (data: FormValues) => {
     setSubmitting(true);
     setMessage(null);
     try {
-      const response = await fetch("/api/credit-applications", {
+      const response = await fetch(`${API_URL}/api/credit-applications`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
-      if (!response.ok) throw new Error("No pudimos enviar tu solicitud.");
-      const body = await response.json();
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.message || "No pudimos enviar tu solicitud.");
       setMessage(`Solicitud recibida. Folio ${body.folio ?? body.id ?? "generado"}.`);
-      reset();
+      reset({ termMonths: 12, downPayment: 0, productId: data.productId });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Ocurrió un error inesperado.");
     } finally {
@@ -72,7 +96,20 @@ export default function ApplicationForm() {
               <label className={labelClass}>Identificación<input {...register("idNumber", { required: true })} className={inputClass} placeholder="CURP, RFC o identificación" /></label>
               <label className={`${labelClass} sm:col-span-2`}>Dirección<input {...register("address", { required: true })} className={inputClass} placeholder="Calle, número, colonia, ciudad y CP" /></label>
               <label className={labelClass}>Ingreso mensual<input {...register("monthlyIncome", { required: true, valueAsNumber: true })} type="number" min="0" className={inputClass} placeholder="$0" /></label>
-              <label className={labelClass}>Equipo<select {...register("productId", { valueAsNumber: true })} className={inputClass}>{products.map((p) => <option key={p.id} value={p.id}>{p.name} · ${p.price.toLocaleString("es-MX")}</option>)}</select></label>
+              <label className={labelClass}>
+                Equipo
+                <div className="relative">
+                  <select {...register("productId", { required: true, valueAsNumber: true })} className={inputClass} disabled={loadingProducts || products.length === 0}>
+                    {products.length === 0 && <option value="">Sin equipos disponibles</option>}
+                    {products.map((product) => (
+                      <option key={product.id} value={product.id}>
+                        {product.brand} {product.model} · ${Number(product.price).toLocaleString("es-MX")}
+                      </option>
+                    ))}
+                  </select>
+                  {loadingProducts && <LoaderCircle className="absolute right-4 top-6 animate-spin text-black/30" size={18} />}
+                </div>
+              </label>
               <label className={labelClass}>Enganche<input {...register("downPayment", { required: true, valueAsNumber: true })} type="number" min="0" className={inputClass} placeholder="$0" /></label>
               <label className={labelClass}>Plazo<select {...register("termMonths", { valueAsNumber: true })} className={inputClass}><option value={6}>6 meses</option><option value={12}>12 meses</option><option value={18}>18 meses</option><option value={24}>24 meses</option></select></label>
             </div>
@@ -86,8 +123,8 @@ export default function ApplicationForm() {
             {message && <div className="mt-6 rounded-2xl bg-slate-950 px-4 py-3 text-sm text-white">{message}</div>}
 
             <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => reset()} className="rounded-full px-6 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Limpiar</button>
-              <button type="submit" disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50">{submitting ? "Enviando…" : "Enviar solicitud"}<ArrowRight size={16} /></button>
+              <button type="button" onClick={() => reset({ termMonths: 12, downPayment: 0 })} className="rounded-full px-6 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Limpiar</button>
+              <button type="submit" disabled={submitting || loadingProducts || products.length === 0} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50">{submitting ? "Enviando…" : "Enviar solicitud"}<ArrowRight size={16} /></button>
             </div>
           </form>
 
