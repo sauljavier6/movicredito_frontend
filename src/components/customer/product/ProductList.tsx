@@ -1,62 +1,82 @@
-import { useState } from "react";
-import ProductCard from "./ProductCard";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, LoaderCircle, PackageOpen } from "lucide-react";
+import ProductCard, { type CatalogProduct } from "./ProductCard";
 
-const mockProducts = [
-  {
-    ID_Catalogo_Equipo: 3,
-    Precio_Venta: 15999,
-    Marca: "Apple",
-    Modelo: "iPhone 13",
-    Almacenamiento: "128GB",
-    Ram: "4GB",
-    Cpu_Gpu: "A15 Bionic",
-    Pantalla: "6.1'' Super Retina XDR",
-    Bateria: "3227mAh",
-    Camara: "12MP + 12MP",
-    imagen: ["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-13-product-red-select-2021?wid=470&hei=556&fmt=png-alpha&.v=1645572315935"],
-  },
-  {
-    ID_Catalogo_Equipo: 1,
-    Precio_Venta: 4500,
-    Marca: "Xiaomi",
-    Modelo: "Redmi Note 8",
-    Almacenamiento: "128GB",
-    Ram: "6GB",
-    Cpu_Gpu: "Snapdragon 665",
-    Pantalla: "6.3'' FHD+",
-    Bateria: "4000mAh",
-    Camara: "48MP + 8MP + 2MP + 2MP",
-    imagen: ["https://i01.appmifile.com/webfile/globalimg/products/pc/redmi-note-8/specs01.jpg"],
-  },
-  {
-    ID_Catalogo_Equipo: 2,
-    Precio_Venta: 7200,
-    Marca: "Samsung",
-    Modelo: "Galaxy A52",
-    Almacenamiento: "256GB",
-    Ram: "8GB",
-    Cpu_Gpu: "Snapdragon 720G",
-    Pantalla: "6.5'' Super AMOLED",
-    Bateria: "4500mAh",
-    Camara: "64MP + 12MP + 5MP + 5MP",
-    imagen: ["https://images.samsung.com/is/image/samsung/p6pim/mx/sm-a525mzkegtc/gallery/mx-galaxy-a52-a525-366992-sm-a525mzkegtc-368215492?$650_519_PNG$"],
-  },
-];
+const API_URL = import.meta.env.VITE_API_URL || "";
 
 const ProductList = () => {
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const productsPerPage = 6;
-  const indexOfLast = currentPage * productsPerPage;
-  const indexOfFirst = indexOfLast - productsPerPage;
-  const currentProducts = mockProducts.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.max(1, Math.ceil(mockProducts.length / productsPerPage));
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadProducts() {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(`${API_URL}/api/products`, { signal: controller.signal });
+        if (!response.ok) throw new Error("No pudimos cargar los equipos disponibles.");
+        const data = await response.json();
+        setProducts(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") {
+          setError((err as Error).message || "No pudimos cargar el catálogo.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    void loadProducts();
+    return () => controller.abort();
+  }, []);
+
+  const totalPages = Math.max(1, Math.ceil(products.length / productsPerPage));
+  const currentProducts = useMemo(() => {
+    const first = (currentPage - 1) * productsPerPage;
+    return products.slice(first, first + productsPerPage);
+  }, [currentPage, products]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-64 items-center justify-center rounded-[30px] bg-[#f5f5f7]">
+        <div className="text-center text-black/45">
+          <LoaderCircle className="mx-auto mb-3 animate-spin" size={28} />
+          <p className="text-sm">Cargando equipos disponibles…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-[30px] border border-black/5 bg-[#f5f5f7] px-6 py-14 text-center">
+        <PackageOpen className="mx-auto mb-4 text-black/20" size={38} />
+        <p className="font-medium text-[#1d1d1f]">Catálogo temporalmente no disponible</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-black/45">{error}</p>
+      </div>
+    );
+  }
+
+  if (!products.length) {
+    return (
+      <div className="rounded-[30px] border border-black/5 bg-[#f5f5f7] px-6 py-14 text-center">
+        <PackageOpen className="mx-auto mb-4 text-black/20" size={38} />
+        <p className="font-medium text-[#1d1d1f]">Próximamente nuevos equipos</p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-black/45">El catálogo se actualizará en cuanto haya equipos activos disponibles para financiamiento.</p>
+      </div>
+    );
+  }
 
   return (
     <div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {currentProducts.map((product) => (
-          <ProductCard key={`${product.ID_Catalogo_Equipo}-${product.Modelo}`} product={product} />
+          <ProductCard key={product.id} product={product} />
         ))}
       </div>
 
@@ -76,9 +96,7 @@ const ProductList = () => {
               <button
                 key={page}
                 onClick={() => setCurrentPage(page)}
-                className={`h-9 min-w-9 rounded-full px-3 text-sm font-medium transition ${
-                  currentPage === page ? "bg-black text-white" : "hover:bg-white"
-                }`}
+                className={`h-9 min-w-9 rounded-full px-3 text-sm font-medium transition ${currentPage === page ? "bg-black text-white" : "hover:bg-white"}`}
               >
                 {page}
               </button>
