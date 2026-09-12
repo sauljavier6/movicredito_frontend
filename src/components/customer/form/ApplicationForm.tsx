@@ -1,318 +1,105 @@
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
-import { FaSpinner } from "react-icons/fa";
-
-type Product = {
-  ID_Catalogo_Equipo: number;
-  Marca: string;
-  Modelo: string;
-  Precio_Venta: number;
-};
+import { useForm } from "react-hook-form";
+import { ArrowRight, Check, ShieldCheck, Smartphone } from "lucide-react";
 
 type FormValues = {
   fullName: string;
-  email: string; 
+  email: string;
   phone: string;
   address: string;
   idNumber: string;
+  monthlyIncome: number;
   productId: number;
   downPayment: number;
   termMonths: number;
-  monthlyIncome: number;
-  idDocument?: FileList;
-  incomeProof?: FileList;
   agreeBlocking: boolean;
 };
 
-const schema: yup.ObjectSchema<FormValues> = yup
-  .object({
-    fullName: yup.string().required("Nombre completo es requerido"),
-    email: yup.string().email("Email inválido").required("Email requerido"),
-    phone: yup.string().required("Teléfono requerido"),
-    address: yup.string().required("Dirección requerida"),
-    idNumber: yup.string().required("Identificación requerida"),
-    productId: yup.number().required("Selecciona un equipo").typeError("Selecciona un equipo"),
-    downPayment: yup
-      .number()
-      .min(0, "El enganche no puede ser negativo")
-      .required("Ingresa el enganche"),
-    termMonths: yup
-      .number()
-      .oneOf([6, 12, 18, 24, 36], "Plazo inválido")
-      .required("Selecciona un plazo"),
-    monthlyIncome: yup.number().min(0, "Ingresos inválidos").required("Ingresa tus ingresos"),
-    idDocument: yup.mixed<FileList>().optional(),
-    incomeProof: yup.mixed<FileList>().optional(),
-    agreeBlocking: yup
-      .boolean()
-      .oneOf([true], "Debes aceptar que el dispositivo puede ser bloqueado por impago")
-      .required("Debes aceptar que el dispositivo puede ser bloqueado por impago"),
-  })
-  .required();
-
-
-const sampleProducts: Product[] = [
-  { ID_Catalogo_Equipo: 1, Marca: "Xiaomi", Modelo: "Redmi Note 8", Precio_Venta: 4500 },
-  { ID_Catalogo_Equipo: 2, Marca: "Samsung", Modelo: "Galaxy A52", Precio_Venta: 7200 },
-  { ID_Catalogo_Equipo: 3, Marca: "Apple", Modelo: "iPhone 13", Precio_Venta: 15999 },
+const products = [
+  { id: 1, name: "Samsung Galaxy A55", price: 8999 },
+  { id: 2, name: "Samsung Galaxy S24", price: 17999 },
+  { id: 3, name: "iPhone 15", price: 18999 },
 ];
 
 export default function ApplicationForm() {
   const [submitting, setSubmitting] = useState(false);
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  const {register,control,handleSubmit,reset,formState: { errors },} = useForm<FormValues>({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      fullName: "",
-      email: "",
-      phone: "",
-      address: "",
-      idNumber: "",
-      productId: sampleProducts[0].ID_Catalogo_Equipo,
-      downPayment: 0,
-      termMonths: 12,
-      monthlyIncome: 0,
-      agreeBlocking: false,
-    },
-  });
+  const [message, setMessage] = useState<string | null>(null);
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>();
 
   const onSubmit = async (data: FormValues) => {
     setSubmitting(true);
-    setServerError(null);
-    setSuccessMessage(null);
-
+    setMessage(null);
     try {
-      // Prepara FormData para incluir archivos
-      const fd = new FormData();
-      fd.append("fullName", data.fullName);
-      fd.append("email", data.email);
-      fd.append("phone", data.phone);
-      fd.append("address", data.address);
-      fd.append("idNumber", data.idNumber);
-      fd.append("productId", String(data.productId));
-      fd.append("downPayment", String(data.downPayment));
-      fd.append("termMonths", String(data.termMonths));
-      fd.append("monthlyIncome", String(data.monthlyIncome));
-      fd.append("agreeBlocking", data.agreeBlocking ? "1" : "0");
-
-      if (data.idDocument && data.idDocument.length > 0) {
-        fd.append("idDocument", data.idDocument[0]);
-      }
-      if (data.incomeProof && data.incomeProof.length > 0) {
-        fd.append("incomeProof", data.incomeProof[0]);
-      }
-
-      // Llamada a tu API (ajusta la URL)
-      const resp = await fetch("/api/credit/apply", {
+      const response = await fetch("/api/credit-applications", {
         method: "POST",
-        body: fd,
-        // no set headers; browser manejara multipart/form-data
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
       });
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ message: "Error en el servidor" }));
-        throw new Error(err.message || "Error en la solicitud");
-      }
-
-      const body = await resp.json();
-      setSuccessMessage("Solicitud enviada correctamente. ID: " + (body.applicationId ?? "—"));
+      if (!response.ok) throw new Error("No pudimos enviar tu solicitud.");
+      const body = await response.json();
+      setMessage(`Solicitud recibida. Folio ${body.folio ?? body.id ?? "generado"}.`);
       reset();
-    } catch (e: any) {
-      setServerError(e.message || "Error inesperado");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Ocurrió un error inesperado.");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const inputClass = "mt-2 w-full rounded-2xl border border-black/10 bg-white px-4 py-3.5 text-[15px] text-slate-950 outline-none transition focus:border-slate-400 focus:ring-4 focus:ring-slate-950/5";
+  const labelClass = "text-sm font-medium text-slate-700";
+
   return (
-    <div className="w-full bg-gray-900 ">
-      <div className="max-w-3xl mx-auto p-6 bg-gray-900 text-white rounded-lg shadow">
-        <h2 className="text-2xl font-bold text-green-400 mb-4">Solicitud de Crédito</h2>
+    <div className="min-h-screen bg-[#f5f5f7] px-4 py-12 sm:px-6 lg:py-20">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-12 max-w-3xl">
+          <span className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-black/5">Solicitud MoviCrédito</span>
+          <h1 className="mt-6 text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">Tu próximo celular, a tu ritmo.</h1>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Completa tus datos para iniciar la evaluación. Antes de contratar conocerás las condiciones, calendario de pagos y políticas aplicables a tu equipo.</p>
+        </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-gray-300">Nombre completo</label>
-              <input
-                {...register("fullName")}
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.fullName?.message}</p>
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          <form onSubmit={handleSubmit(onSubmit)} className="rounded-[32px] bg-white p-6 shadow-sm ring-1 ring-black/5 sm:p-10">
+            <div className="mb-9 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-white"><Smartphone size={20} /></div>
+              <div><h2 className="text-xl font-semibold text-slate-950">Datos de tu solicitud</h2><p className="text-sm text-slate-500">Información personal y financiera básica.</p></div>
             </div>
 
-            <div>
-              <label className="text-sm text-gray-300">Correo electrónico</label>
-              <input
-                {...register("email")}
-                type="email"
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.email?.message}</p>
+            <div className="grid gap-6 sm:grid-cols-2">
+              <label className={labelClass}>Nombre completo<input {...register("fullName", { required: true })} className={inputClass} placeholder="Nombre y apellidos" />{errors.fullName && <span className="mt-1 block text-xs text-red-600">Campo requerido</span>}</label>
+              <label className={labelClass}>Correo electrónico<input {...register("email", { required: true })} type="email" className={inputClass} placeholder="correo@ejemplo.com" /></label>
+              <label className={labelClass}>Teléfono<input {...register("phone", { required: true })} className={inputClass} placeholder="10 dígitos" /></label>
+              <label className={labelClass}>Identificación<input {...register("idNumber", { required: true })} className={inputClass} placeholder="CURP, RFC o identificación" /></label>
+              <label className={`${labelClass} sm:col-span-2`}>Dirección<input {...register("address", { required: true })} className={inputClass} placeholder="Calle, número, colonia, ciudad y CP" /></label>
+              <label className={labelClass}>Ingreso mensual<input {...register("monthlyIncome", { required: true, valueAsNumber: true })} type="number" min="0" className={inputClass} placeholder="$0" /></label>
+              <label className={labelClass}>Equipo<select {...register("productId", { valueAsNumber: true })} className={inputClass}>{products.map((p) => <option key={p.id} value={p.id}>{p.name} · ${p.price.toLocaleString("es-MX")}</option>)}</select></label>
+              <label className={labelClass}>Enganche<input {...register("downPayment", { required: true, valueAsNumber: true })} type="number" min="0" className={inputClass} placeholder="$0" /></label>
+              <label className={labelClass}>Plazo<select {...register("termMonths", { valueAsNumber: true })} className={inputClass}><option value={6}>6 meses</option><option value={12}>12 meses</option><option value={18}>18 meses</option><option value={24}>24 meses</option></select></label>
             </div>
 
-            <div>
-              <label className="text-sm text-gray-300">Teléfono</label>
-              <input
-                {...register("phone")}
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.phone?.message}</p>
+            <label className="mt-8 flex cursor-pointer gap-3 rounded-2xl bg-[#f5f5f7] p-4 text-sm leading-6 text-slate-600">
+              <input {...register("agreeBlocking", { required: true })} type="checkbox" className="mt-1 h-4 w-4 accent-slate-950" />
+              <span>Entiendo que el equipo financiado estará sujeto a medidas de protección y que cualquier restricción por incumplimiento se aplicará únicamente conforme al contrato y las políticas aceptadas.</span>
+            </label>
+            {errors.agreeBlocking && <p className="mt-2 text-xs text-red-600">Debes aceptar las condiciones para continuar.</p>}
+
+            {message && <div className="mt-6 rounded-2xl bg-slate-950 px-4 py-3 text-sm text-white">{message}</div>}
+
+            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" onClick={() => reset()} className="rounded-full px-6 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Limpiar</button>
+              <button type="submit" disabled={submitting} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50">{submitting ? "Enviando…" : "Enviar solicitud"}<ArrowRight size={16} /></button>
             </div>
+          </form>
 
-            <div>
-              <label className="text-sm text-gray-300">Dirección</label>
-              <input
-                {...register("address")}
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.address?.message}</p>
+          <aside className="h-fit rounded-[32px] bg-slate-950 p-7 text-white lg:sticky lg:top-28">
+            <ShieldCheck size={28} />
+            <h3 className="mt-5 text-2xl font-semibold tracking-tight">Proceso claro y seguro.</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-300">La solicitud inicia una evaluación; no representa una aprobación automática.</p>
+            <div className="mt-7 space-y-4 text-sm text-slate-200">
+              {["Revisión de identidad", "Evaluación de capacidad de pago", "Condiciones visibles antes de contratar", "Equipo vinculado al crédito aprobado"].map((item) => <div key={item} className="flex gap-3"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white text-slate-950"><Check size={12} /></span>{item}</div>)}
             </div>
-
-            <div>
-              <label className="text-sm text-gray-300">Identificación (RFC/ID/IMEI opc.)</label>
-              <input
-                {...register("idNumber")}
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.idNumber?.message}</p>
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-300">Ingresos mensuales</label>
-              <input
-                {...register("monthlyIncome")}
-                type="number"
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.monthlyIncome?.message}</p>
-            </div>
-          </div>
-
-          <hr className="border-gray-700 my-2" />
-
-          {/* Selección de equipo y condiciones */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm text-gray-300">Equipo</label>
-              <Controller
-                control={control}
-                name="productId"
-                render={({ field }) => (
-                  <select
-                    {...field}
-                    className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-                  >
-                    {sampleProducts.map((p) => (
-                      <option key={p.ID_Catalogo_Equipo} value={p.ID_Catalogo_Equipo}>
-                        {p.Marca} {p.Modelo} — ${p.Precio_Venta.toLocaleString()}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.productId?.message}</p>
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-300">Enganche</label>
-              <input
-                {...register("downPayment")}
-                type="number"
-                className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.downPayment?.message}</p>
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-300">Plazo (meses)</label>
-              <Controller
-                control={control}
-                name="termMonths"
-                render={({ field }) => (
-                  <select
-                    {...field}
-                    className="w-full mt-1 p-2 rounded bg-gray-800 border border-gray-700 focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value={6}>6</option>
-                    <option value={12}>12</option>
-                    <option value={18}>18</option>
-                    <option value={24}>24</option>
-                    <option value={36}>36</option>
-                  </select>
-                )}
-              />
-              <p className="text-xs text-red-400 mt-1">{errors.termMonths?.message}</p>
-            </div>
-          </div>
-
-          {/* Uploads */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm text-gray-300">Documento de identidad (jpg/pdf)</label>
-              <input
-                {...register("idDocument")}
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf"
-                className="w-full mt-1 text-sm text-gray-200"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm text-gray-300">Comprobante de ingresos (opcional)</label>
-              <input
-                {...register("incomeProof")}
-                type="file"
-                accept=".jpg,.jpeg,.png,.pdf"
-                className="w-full mt-1 text-sm text-gray-200"
-              />
-            </div>
-          </div>
-
-          {/* Consentimiento bloqueo */}
-          <div className="flex items-start gap-3">
-            <input {...register("agreeBlocking")} type="checkbox" className="mt-1" />
-            <div>
-              <p className="text-sm text-gray-300">
-                Entiendo y acepto que, en caso de incumplimiento de pago, el dispositivo puede ser bloqueado
-                remotamente por Movicrédito según lo especificado en mi contrato.
-              </p>
-              <p className="text-xs text-gray-500 mt-1">
-                (La aceptación es obligatoria para continuar.)
-              </p>
-              <p className="text-xs text-red-400 mt-1">{errors.agreeBlocking?.message}</p>
-            </div>
-          </div>
-
-          {/* Errores y estados */}
-          {serverError && <p className="text-sm text-red-400">{serverError}</p>}
-          {successMessage && <p className="text-sm text-green-400">{successMessage}</p>}
-
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                reset();
-                setServerError(null);
-                setSuccessMessage(null);
-              }}
-              className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
-            >
-              Limpiar
-            </button>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="px-6 py-2 rounded bg-green-600 hover:bg-green-700 disabled:opacity-60 flex items-center gap-2"
-            >
-              {submitting && <FaSpinner className="animate-spin" />}
-              <span>{submitting ? "Enviando..." : "Solicitar Crédito"}</span>
-            </button>
-          </div>
-        </form>
+          </aside>
+        </div>
       </div>
     </div>
   );
