@@ -14,6 +14,7 @@ import FormLayout from "../components/layouts/FormLayout";
 import AuthPage from "../pages/auth/AuthPage";
 import CollectionsPage from "../pages/admin/collectionspage/CollectionsPage";
 import CustomerPage from "../pages/admin/customerpage/CustomerPage";
+import DeviceActionsPage from "../pages/admin/deviceactionspage/DeviceActionsPage";
 import FinancedPage from "../pages/admin/financedpage/FinancedPage";
 import HomePage from "../pages/admin/homepage/HomePage";
 import PaymentsPage from "../pages/admin/paymentspage/PaymentsPage";
@@ -70,6 +71,7 @@ const AppRoutes = () => {
             />
           }
         />
+        <Route path="ordenes-dispositivo" element={<DeviceActionsPage />} />
         <Route path="cobranza" element={<CollectionsPage />} />
         <Route
           path="reportes"
