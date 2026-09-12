@@ -8,6 +8,7 @@ import {
   CreditCard,
   History,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Menu,
   PackageSearch,
@@ -25,6 +26,7 @@ const navigation = [
   { to: "/admin/inventario", label: "Inventario", icon: Boxes },
   { to: "/admin/catalogo", label: "Catálogo", icon: PackageSearch },
   { to: "/admin/dispositivos", label: "Dispositivos", icon: Smartphone },
+  { to: "/admin/ordenes-dispositivo", label: "Órdenes de dispositivo", icon: ListChecks },
   { to: "/admin/cobranza", label: "Cobranza", icon: BellRing },
   { to: "/admin/auditoria", label: "Auditoría", icon: History },
 ];
