@@ -1,80 +1,113 @@
 import { useState } from "react";
-import { FaUser, FaLock } from "react-icons/fa";
+import { ArrowRight, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-  interface LoginProps {
-    onRegister?: (register: boolean) => void;
-  }
+const API_URL = import.meta.env.VITE_API_URL || "";
 
-export default function LoginComponent({ onRegister }: LoginProps) {
+export default function LoginComponent() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Login con:", { email, password });
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${API_URL}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.message || "No fue posible iniciar sesión.");
+
+      sessionStorage.setItem("movicredito_token", body.token);
+      sessionStorage.setItem("movicredito_user", JSON.stringify(body.user));
+      navigate("/admin");
+    } catch (err) {
+      setError((err as Error).message || "No fue posible iniciar sesión.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-green-900">
-      <div className="bg-white shadow-lg rounded-xl p-8 w-full max-w-md">
-        {/* Logo */}
-        <div className="flex flex-col items-center mb-6">
-          <img
-            src="/logo.jpg"
-            alt="Movicrédito"
-            className="w-16 h-16 mb-2"
-          />
-          <h1 className="text-2xl font-bold text-gray-800">Movicrédito</h1>
-          <p className="text-gray-500 text-sm">Accede a tu cuenta</p>
+    <section className="mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-6xl items-center gap-12 px-6 py-14 lg:grid-cols-[1.05fr_.95fr] lg:px-10">
+      <div className="hidden lg:block">
+        <div className="inline-flex items-center gap-2 rounded-full border border-black/5 bg-white px-3.5 py-2 text-xs font-medium text-black/55 shadow-sm">
+          <ShieldCheck size={14} /> Acceso administrativo protegido
+        </div>
+        <h1 className="mt-7 max-w-xl text-6xl font-semibold tracking-[-0.055em] text-[#1d1d1f]">
+          Control claro para una operación financiera seria.
+        </h1>
+        <p className="mt-6 max-w-lg text-lg leading-8 text-black/50">
+          Gestiona solicitudes, créditos, pagos, inventario y dispositivos desde un solo lugar.
+        </p>
+      </div>
+
+      <div className="rounded-[32px] border border-black/5 bg-white p-7 shadow-[0_30px_90px_rgba(0,0,0,0.08)] sm:p-10">
+        <div>
+          <p className="text-sm font-medium text-black/40">MoviCrédito Admin</p>
+          <h2 className="mt-2 text-4xl font-semibold tracking-[-0.045em] text-[#1d1d1f]">Inicia sesión</h2>
+          <p className="mt-3 text-sm leading-6 text-black/45">Usa una cuenta administrativa autorizada.</p>
         </div>
 
-        {/* Formulario */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Email */}
-          <div className="relative">
-            <FaUser className="absolute left-3 top-3 text-gray-400" />
-            <input
-              type="email"
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-              required
-            />
-          </div>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-black/60">Correo electrónico</span>
+            <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 transition focus-within:border-black/30 focus-within:bg-white">
+              <Mail size={18} className="text-black/35" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-14 w-full bg-transparent text-sm outline-none placeholder:text-black/25"
+                placeholder="admin@movicredito.mx"
+                autoComplete="email"
+                required
+              />
+            </div>
+          </label>
 
-          {/* Password */}
-          <div className="relative">
-            <FaLock className="absolute left-3 top-3 text-gray-400" />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-              required
-            />
-          </div>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-black/60">Contraseña</span>
+            <div className="flex items-center gap-3 rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 transition focus-within:border-black/30 focus-within:bg-white">
+              <LockKeyhole size={18} className="text-black/35" />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-14 w-full bg-transparent text-sm outline-none placeholder:text-black/25"
+                placeholder="••••••••••"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+          </label>
 
-          {/* Botón login */}
+          {error && (
+            <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+          )}
+
           <button
             type="submit"
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-lg transition"
+            disabled={loading}
+            className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-black px-5 text-sm font-medium text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Iniciar sesión
+            {loading ? "Validando…" : "Entrar al panel"}
+            {!loading && <ArrowRight size={17} />}
           </button>
         </form>
 
-        {/* Extras */}
-        <div className="flex justify-between text-sm text-gray-500 mt-4">
-          <a href="/recuperar" className="hover:text-green-600">
-            ¿Olvidaste tu contraseña?
-          </a>
-          <a className="hover:text-green-600" onClick={() => onRegister?.(true)}>
-            Crear cuenta
-          </a>
-        </div>
+        <p className="mt-6 text-center text-xs leading-5 text-black/35">
+          El acceso se registra y está sujeto a los permisos asignados a cada usuario.
+        </p>
       </div>
-    </div>
+    </section>
   );
 }
