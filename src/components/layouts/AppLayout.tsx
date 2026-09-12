@@ -1,99 +1,112 @@
-import { Outlet } from "react-router-dom";
 import { useState } from "react";
-import { FaUserCircle } from "react-icons/fa";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import {
+  BellRing,
+  Boxes,
+  ClipboardCheck,
+  CreditCard,
+  History,
+  LayoutDashboard,
+  Menu,
+  PackageSearch,
+  Smartphone,
+  Users,
+  X,
+} from "lucide-react";
 
+const navigation = [
+  { to: "/admin", label: "Inicio", icon: LayoutDashboard },
+  { to: "/admin/solicitudes", label: "Solicitudes", icon: ClipboardCheck },
+  { to: "/admin/clientes", label: "Clientes", icon: Users },
+  { to: "/admin/creditos", label: "Créditos", icon: CreditCard },
+  { to: "/admin/pagos", label: "Pagos", icon: CreditCard },
+  { to: "/admin/inventario", label: "Inventario", icon: Boxes },
+  { to: "/admin/catalogo", label: "Catálogo", icon: PackageSearch },
+  { to: "/admin/dispositivos", label: "Dispositivos", icon: Smartphone },
+  { to: "/admin/cobranza", label: "Cobranza", icon: BellRing },
+  { to: "/admin/auditoria", label: "Auditoría", icon: History },
+];
 
 const AppLayout = () => {
-  const [isLoggedIn] = useState(false); //setIsLoggedIn
-  const profileImage = "https://i.pravatar.cc/150?img=32";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
+  const isActive = (to: string) =>
+    to === "/admin" ? location.pathname === to : location.pathname.startsWith(to);
 
   return (
-    <>
-      {/* Navbar */}
-      <header className="hidden md:block">
-        <nav className="fixed top-0 z-50 w-full bg-gray-900 border-b border-green-500 shadow-lg">
-          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-            
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <img
-                src="/logo.jpg"
-                alt="Movicrédito Logo"
-                className="h-8 w-8 md:h-10 md:w-10 object-contain"
-              />
-              <span className="text-white font-bold text-xl tracking-wide">
-                Movicrédito
-              </span>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <header className="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/95 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 md:px-6">
+          <Link to="/admin" className="flex items-center gap-3">
+            <img
+              src="/logo.jpg"
+              alt="MoviCrédito"
+              className="h-10 w-10 rounded-xl object-cover"
+            />
+            <div>
+              <p className="font-bold tracking-tight">MoviCrédito</p>
+              <p className="text-xs text-slate-400">Administración</p>
             </div>
+          </Link>
 
-            {/* Navegación */}
-            <div className="flex gap-6 text-white font-medium items-center">
-              <a href="/admin" className="hover:text-green-400 transition">Inicio</a>
-              <a href="/admin/clientes" className="hover:text-green-400 transition">Clientes</a>
-              <a href="/admin/catalogo" className="hover:text-green-400 transition">Catalogo</a>
-              <a href="/admin/creditos" className="hover:text-green-400 transition">Créditos</a>
-              <a href="/admin/reportes" className="hover:text-green-400 transition">Reportes</a>
-
-              {/* Icono o foto de usuario */}
-              {!isLoggedIn ? (
-                <a href="/login" className="text-3xl hover:text-green-400 transition">
-                  <FaUserCircle />
-                </a>
-              ) : (
-                <img
-                  src={profileImage}
-                  alt="Perfil"
-                  className="w-10 h-10 rounded-full border-2 border-green-500 cursor-pointer"
-                />
-              )}
-            </div>
-
-          </div>
-        </nav>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((current) => !current)}
+            className="rounded-lg border border-slate-700 p-2 text-slate-200 md:hidden"
+            aria-label="Abrir menú"
+          >
+            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </header>
 
+      <div className="mx-auto flex max-w-[1600px]">
+        <aside
+          className={`${
+            menuOpen ? "block" : "hidden"
+          } fixed inset-x-0 top-16 z-40 max-h-[calc(100vh-4rem)] overflow-y-auto border-b border-slate-800 bg-slate-950 p-4 md:sticky md:top-16 md:block md:h-[calc(100vh-4rem)] md:w-64 md:shrink-0 md:border-b-0 md:border-r md:p-4`}
+        >
+          <nav className="space-y-1">
+            {navigation.map(({ to, label, icon: Icon }) => (
+              <Link
+                key={to}
+                to={to}
+                onClick={() => setMenuOpen(false)}
+                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
+                  isActive(to)
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "text-slate-300 hover:bg-slate-900 hover:text-white"
+                }`}
+              >
+                <Icon size={18} />
+                {label}
+              </Link>
+            ))}
+          </nav>
 
-      <main className="pt-[70px] md:pt-[70px] w-full bg-gray-50 min-h-screen">
-        <Outlet />
-      </main>
-
-      <footer className="bg-gray-900 text-white border-t-4 border-green-500">
-        <div className="container mx-auto px-6 py-10 flex flex-col md:flex-row gap-8">
-          {/* Información de sucursales */}
-          <div className="md:w-1/2">
-            <h3 className="text-lg font-semibold mb-4 text-green-400">Nuestras Sucursales</h3>
-            <div className="text-sm space-y-3 text-gray-300">
-              <p><span className="font-semibold text-white">Teléfono:</span> +52 646 278 1997</p>
-              <p><span className="font-semibold text-white">Zona Centro:</span> 206 Calle Sexta, Ensenada, BC</p>
-              <p><span className="font-semibold text-white">Valle Dorado:</span> Blvd. Zertuche 937, Ensenada, BC</p>
-              <p><span className="font-semibold text-white">Hidalgo:</span> Av. Diamante 2057, Ensenada, BC</p>
-            </div>
+          <div className="mt-6 border-t border-slate-800 pt-4">
+            <Link
+              to="/"
+              className="block rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-900 hover:text-white"
+            >
+              Ver portal público
+            </Link>
+            <Link
+              to="/login"
+              className="mt-1 block rounded-xl px-3 py-2 text-sm text-slate-400 transition hover:bg-slate-900 hover:text-white"
+            >
+              Cerrar sesión
+            </Link>
           </div>
+        </aside>
 
-          {/* Mapa */}
-          <div className="md:w-1/2 w-full h-60 md:h-44 rounded-lg overflow-hidden shadow-md border border-green-700">
-            <iframe
-              title="Mapa de ubicación"
-              src="https://www.google.com/maps/d/u/0/embed?mid=12zu-u-wFLP80AqhFmDAMPwjnRexPOjg&ehbc=2E312F&noprof=1"
-              width="100%"
-              height="100%"
-              allowFullScreen
-              loading="lazy"
-              className="border-0 w-full h-full"
-            ></iframe>
-          </div>
-        </div>
-
-        {/* Derechos */}
-        <div className="bg-black text-center py-4 text-xs text-gray-400">
-          © 2025 Movicrédito. Todos los derechos reservados. Powered by{" "}
-          <span className="font-semibold text-green-400">SWS Souls Web Solutions</span>.
-        </div>
-      </footer>
-    </>
+        <main className="min-w-0 flex-1">
+          <Outlet />
+        </main>
+      </div>
+    </div>
   );
 };
 
-export default AppLayout;      
-
+export default AppLayout;
