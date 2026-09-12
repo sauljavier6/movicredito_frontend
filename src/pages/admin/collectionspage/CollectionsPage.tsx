@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, BellRing, LockKeyhole, RefreshCw, ShieldAlert } from "lucide-react";
 
@@ -107,6 +108,6 @@ export default function CollectionsPage() {
   );
 }
 
-function Metric({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+function Metric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return <div className="rounded-[24px] bg-white p-5 shadow-sm ring-1 ring-black/5"><div className="flex items-center justify-between text-black/40"><span className="text-xs font-medium uppercase tracking-[0.12em]">{label}</span>{icon}</div><p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#1d1d1f]">{value}</p></div>;
 }
