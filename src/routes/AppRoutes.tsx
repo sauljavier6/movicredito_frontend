@@ -1,9 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import {
-  BellRing,
   Boxes,
   ClipboardCheck,
-  CreditCard,
   History,
   Landmark,
   Smartphone,
@@ -14,10 +12,12 @@ import AuthLayout from "../components/layouts/AuthLayout";
 import FormLayout from "../components/layouts/FormLayout";
 
 import AuthPage from "../pages/auth/AuthPage";
-import HomePage from "../pages/admin/homepage/HomePage";
+import CollectionsPage from "../pages/admin/collectionspage/CollectionsPage";
 import CustomerPage from "../pages/admin/customerpage/CustomerPage";
-import PhonesPage from "../pages/admin/phonespage/PhonesPage";
 import FinancedPage from "../pages/admin/financedpage/FinancedPage";
+import HomePage from "../pages/admin/homepage/HomePage";
+import PaymentsPage from "../pages/admin/paymentspage/PaymentsPage";
+import PhonesPage from "../pages/admin/phonespage/PhonesPage";
 import AdminModulePage from "../pages/admin/shared/AdminModulePage";
 import CatalogoPage from "../pages/customer/catalogopage/CatalogoPage";
 import FormPage from "../pages/customer/formpage/FormPage";
@@ -49,16 +49,7 @@ const AppRoutes = () => {
         />
         <Route path="catalogo" element={<PhonesPage />} />
         <Route path="creditos" element={<FinancedPage />} />
-        <Route
-          path="pagos"
-          element={
-            <AdminModulePage
-              title="Pagos"
-              description="Consulta pagos, conciliaciones, cuotas pendientes y movimientos aplicados a cada crédito."
-              icon={<CreditCard size={24} />}
-            />
-          }
-        />
+        <Route path="pagos" element={<PaymentsPage />} />
         <Route
           path="inventario"
           element={
@@ -79,16 +70,7 @@ const AppRoutes = () => {
             />
           }
         />
-        <Route
-          path="cobranza"
-          element={
-            <AdminModulePage
-              title="Cobranza"
-              description="Gestiona cartera vencida, recordatorios, periodos de gracia y acciones autorizadas de recuperación."
-              icon={<BellRing size={24} />}
-            />
-          }
-        />
+        <Route path="cobranza" element={<CollectionsPage />} />
         <Route
           path="reportes"
           element={
