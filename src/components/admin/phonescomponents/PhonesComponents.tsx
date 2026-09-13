@@ -1,88 +1,184 @@
-import { useState } from "react";
-import { FaSearch, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
+import { Pencil, Plus, RefreshCw, Search, ShieldCheck } from "lucide-react";
 
-interface Equipo {
+const API_URL = import.meta.env.VITE_API_URL || "";
+
+type Product = {
   id: number;
-  modelo: string;
-  marca: string;
-  precio: number;
-  stock: number;
-  estado: string;
-}
+  brand: string;
+  model: string;
+  storage: string;
+  ram?: string;
+  processor?: string;
+  display?: string;
+  battery?: string;
+  camera?: string;
+  price: number | string;
+  imageUrl?: string;
+  supportsKnoxGuard: boolean;
+  active: boolean;
+};
+
+type ProductForm = {
+  brand: string;
+  model: string;
+  storage: string;
+  ram: string;
+  price: string;
+  imageUrl: string;
+  supportsKnoxGuard: boolean;
+};
+
+const emptyForm: ProductForm = { brand: "", model: "", storage: "", ram: "", price: "", imageUrl: "", supportsKnoxGuard: false };
 
 export default function PhonesComponents() {
-  const [equipos] = useState<Equipo[]>([ //setEquipos
-    { id: 1, modelo: "iPhone 15", marca: "Apple", precio: 25000, stock: 10, estado: "Disponible" },
-    { id: 2, modelo: "Galaxy S23", marca: "Samsung", precio: 18000, stock: 15, estado: "Disponible" },
-    // Más equipos de ejemplo
-  ]);
-
+  const token = sessionStorage.getItem("movicredito_token");
+  const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
+  const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredEquipos = equipos.filter(e =>
-    e.modelo.toLowerCase().includes(search.toLowerCase()) ||
-    e.marca.toLowerCase().includes(search.toLowerCase())
-  );
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_URL}/api/products/admin`, { headers: { Authorization: `Bearer ${token}` } });
+      const body = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(body?.message || "No fue posible consultar el catálogo.");
+      setProducts(Array.isArray(body) ? body : []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No fue posible consultar el catálogo.");
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  const filtered = useMemo(() => {
+    const value = search.trim().toLowerCase();
+    if (!value) return products;
+    return products.filter((product) => `${product.brand} ${product.model} ${product.storage}`.toLowerCase().includes(value));
+  }, [products, search]);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setMessage(null);
+    setError(null);
+    const payload = { ...form, price: Number(form.price), imageUrl: form.imageUrl || null, ram: form.ram || null };
+    const response = await fetch(editingId ? `${API_URL}/api/products/${editingId}` : `${API_URL}/api/products`, {
+      method: editingId ? "PATCH" : "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(body.message || "No fue posible guardar el equipo.");
+      return;
+    }
+    setMessage(editingId ? "Equipo actualizado." : "Equipo agregado al catálogo.");
+    setEditingId(null);
+    setForm(emptyForm);
+    await load();
+  };
+
+  const edit = (product: Product) => {
+    setEditingId(product.id);
+    setForm({
+      brand: product.brand,
+      model: product.model,
+      storage: product.storage,
+      ram: product.ram || "",
+      price: String(product.price),
+      imageUrl: product.imageUrl || "",
+      supportsKnoxGuard: Boolean(product.supportsKnoxGuard),
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const toggleActive = async (product: Product) => {
+    setError(null);
+    const response = await fetch(`${API_URL}/api/products/${product.id}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ active: !product.active }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      setError(body.message || "No fue posible cambiar el estado del equipo.");
+      return;
+    }
+    await load();
+  };
+
+  const input = "w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3 text-sm outline-none focus:bg-white";
 
   return (
-    <div className="p-6 bg-gray-900 min-h-screen text-white">
-      <h1 className="text-2xl font-bold mb-6 text-green-400">Equipos</h1>
-
-      {/* Buscador y botón agregar */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 items-center justify-between">
-        <div className="relative w-full md:w-1/2">
-          <FaSearch className="absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Buscar equipo por modelo o marca"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 rounded-lg border border-gray-700 bg-gray-800 text-white focus:outline-none focus:ring-2 focus:ring-green-400"
-          />
+    <section className="min-h-screen bg-[#f5f5f7] px-4 py-8 md:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm text-black/40">Productos financiables</p>
+            <h1 className="mt-1 text-4xl font-semibold tracking-[-0.045em] text-[#1d1d1f]">Catálogo de equipos</h1>
+            <p className="mt-2 text-sm text-black/45">Modelos y precios comerciales. Las unidades físicas y el stock se administran en Inventario.</p>
+          </div>
+          <button onClick={() => void load()} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5" aria-label="Actualizar catálogo"><RefreshCw size={17} /></button>
         </div>
 
-        <button className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg font-semibold transition">
-          <FaPlus /> Agregar Equipo
-        </button>
-      </div>
+        <form onSubmit={submit} className="mt-8 rounded-[30px] bg-white p-6 shadow-sm ring-1 ring-black/5 md:p-8">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-black text-white">{editingId ? <Pencil size={18} /> : <Plus size={18} />}</div>
+            <div><h2 className="font-semibold">{editingId ? "Editar equipo" : "Agregar equipo"}</h2><p className="text-sm text-black/40">Sin stock ficticio: aquí sólo se define el producto.</p></div>
+          </div>
+          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <input className={input} placeholder="Marca" value={form.brand} onChange={(e) => setForm((v) => ({ ...v, brand: e.target.value }))} required />
+            <input className={input} placeholder="Modelo" value={form.model} onChange={(e) => setForm((v) => ({ ...v, model: e.target.value }))} required />
+            <input className={input} placeholder="Almacenamiento (ej. 128 GB)" value={form.storage} onChange={(e) => setForm((v) => ({ ...v, storage: e.target.value }))} required />
+            <input className={input} placeholder="RAM" value={form.ram} onChange={(e) => setForm((v) => ({ ...v, ram: e.target.value }))} />
+            <input className={input} type="number" min="1" step="0.01" placeholder="Precio MXN" value={form.price} onChange={(e) => setForm((v) => ({ ...v, price: e.target.value }))} required />
+            <input className={`${input} md:col-span-2`} placeholder="URL de imagen" value={form.imageUrl} onChange={(e) => setForm((v) => ({ ...v, imageUrl: e.target.value }))} />
+            <label className="flex items-center gap-3 rounded-2xl bg-[#f5f5f7] px-4 py-3 text-sm"><input type="checkbox" checked={form.supportsKnoxGuard} onChange={(e) => setForm((v) => ({ ...v, supportsKnoxGuard: e.target.checked }))} /> Compatible con Knox Guard</label>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button className="rounded-full bg-black px-6 py-3 text-sm font-medium text-white">{editingId ? "Guardar cambios" : "Agregar al catálogo"}</button>
+            {editingId && <button type="button" onClick={() => { setEditingId(null); setForm(emptyForm); }} className="rounded-full bg-[#f5f5f7] px-6 py-3 text-sm font-medium">Cancelar edición</button>}
+          </div>
+          {message && <p className="mt-4 text-sm text-emerald-700">{message}</p>}
+          {error && <p className="mt-4 text-sm text-red-700">{error}</p>}
+        </form>
 
-      {/* Tabla de equipos */}
-      <div className="overflow-x-auto bg-gray-800 rounded-lg shadow">
-        <table className="w-full text-left text-white min-w-max">
-          <thead className="bg-gray-700">
-            <tr>
-              <th className="px-4 py-2">Modelo</th>
-              <th className="px-4 py-2">Marca</th>
-              <th className="px-4 py-2">Precio</th>
-              <th className="px-4 py-2">Stock</th>
-              <th className="px-4 py-2">Estado</th>
-              <th className="px-4 py-2">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEquipos.map(equipo => (
-              <tr key={equipo.id} className="border-b border-gray-700 hover:bg-gray-700">
-                <td className="px-4 py-2">{equipo.modelo}</td>
-                <td className="px-4 py-2">{equipo.marca}</td>
-                <td className="px-4 py-2">${equipo.precio.toLocaleString()}</td>
-                <td className="px-4 py-2">{equipo.stock}</td>
-                <td className="px-4 py-2">{equipo.estado}</td>
-                <td className="px-4 py-2 flex gap-2">
-                  <button className="text-green-400 hover:text-green-600"><FaEdit /></button>
-                  <button className="text-red-500 hover:text-red-700"><FaTrash /></button>
-                </td>
-              </tr>
-            ))}
-            {filteredEquipos.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center py-4 text-gray-400">
-                  No se encontraron equipos
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <div className="mt-8 flex max-w-xl items-center gap-2 rounded-full bg-white p-1.5 shadow-sm ring-1 ring-black/5">
+          <Search size={17} className="ml-3 text-black/30" />
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Marca, modelo o almacenamiento" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
+        </div>
+
+        <div className="mt-7 overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-black/5">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[940px] text-left text-sm">
+              <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Equipo</th><th className="px-6 py-4">Precio</th><th className="px-6 py-4">Knox</th><th className="px-6 py-4">Estado</th><th className="px-6 py-4">Acciones</th></tr></thead>
+              <tbody className="divide-y divide-black/5">
+                {filtered.map((product) => (
+                  <tr key={product.id} className="hover:bg-black/[0.015]">
+                    <td className="px-6 py-4"><p className="font-medium">{product.brand} {product.model}</p><p className="mt-0.5 text-xs text-black/40">{product.storage}{product.ram ? ` · ${product.ram} RAM` : ""}</p></td>
+                    <td className="px-6 py-4 font-medium">{Number(product.price).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
+                    <td className="px-6 py-4">{product.supportsKnoxGuard ? <span className="inline-flex items-center gap-1.5 text-xs font-medium"><ShieldCheck size={14} /> Compatible</span> : <span className="text-xs text-black/40">No marcado</span>}</td>
+                    <td className="px-6 py-4"><span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs font-medium text-black/60">{product.active ? "Activo" : "Inactivo"}</span></td>
+                    <td className="px-6 py-4"><div className="flex gap-2"><button onClick={() => edit(product)} className="rounded-full bg-[#f5f5f7] px-4 py-2 text-xs font-medium">Editar</button><button onClick={() => void toggleActive(product)} className="rounded-full bg-[#f5f5f7] px-4 py-2 text-xs font-medium">{product.active ? "Desactivar" : "Activar"}</button></div></td>
+                  </tr>
+                ))}
+                {!loading && filtered.length === 0 && <tr><td colSpan={5} className="px-6 py-14 text-center text-black/35">No hay equipos en el catálogo.</td></tr>}
+                {loading && <tr><td colSpan={5} className="px-6 py-14 text-center text-black/35">Consultando catálogo…</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }
