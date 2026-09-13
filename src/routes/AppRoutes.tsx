@@ -19,6 +19,7 @@ import PaymentsPage from "../pages/admin/paymentspage/PaymentsPage";
 import PhonesPage from "../pages/admin/phonespage/PhonesPage";
 import AdminModulePage from "../pages/admin/shared/AdminModulePage";
 import CatalogoPage from "../pages/customer/catalogopage/CatalogoPage";
+import ContractPage from "../pages/customer/contractpage/ContractPage";
 import FormPage from "../pages/customer/formpage/FormPage";
 
 const AppRoutes = () => {
@@ -27,6 +28,7 @@ const AppRoutes = () => {
       <Route path="/" element={<FormLayout />}>
         <Route index element={<CatalogoPage />} />
         <Route path="formulario" element={<FormPage />} />
+        <Route path="contrato" element={<ContractPage />} />
       </Route>
 
       <Route path="/login" element={<AuthLayout />}>
