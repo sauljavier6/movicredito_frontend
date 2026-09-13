@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useState, type ReactNode } from "react";
+import { useForm, type UseFormRegisterReturn } from "react-hook-form";
 import { useSearchParams } from "react-router-dom";
 import { ArrowRight, Check, FileCheck2, LoaderCircle, ShieldCheck, Smartphone } from "lucide-react";
 import type { CatalogProduct } from "../product/ProductCard";
@@ -18,8 +18,8 @@ type FormValues = {
   idNumber: string;
   monthlyIncome: number;
   productId: number;
+  financingPlanId: string;
   downPayment: number;
-  termMonths: number;
   reference1Name: string;
   reference1Phone: string;
   reference1Relationship: string;
@@ -39,42 +39,125 @@ type KycFiles = {
   selfie?: File;
 };
 
+type FinancingPlan = {
+  id: string;
+  name: string;
+  termMonths: number;
+  annualInterestRate: number | string;
+  minimumDownPaymentRatio: number | string;
+  description?: string;
+};
+
+type FinancingQuote = {
+  financingPlanId: string;
+  financingPlanName: string;
+  price: number;
+  downPayment: number;
+  minimumDownPayment: number;
+  financedAmount: number;
+  annualInterestRate: number;
+  termMonths: number;
+  interestAmount: number;
+  totalAmount: number;
+  monthlyPayment: number;
+};
+
 const API_URL = import.meta.env.VITE_API_URL || "";
+const currency = (value: number) => value.toLocaleString("es-MX", { style: "currency", currency: "MXN" });
 
 export default function ApplicationForm() {
   const [searchParams] = useSearchParams();
   const selectedProductId = Number(searchParams.get("productId") || 0);
+  const selectedPlanId = searchParams.get("financingPlanId") || "";
   const [products, setProducts] = useState<CatalogProduct[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [plans, setPlans] = useState<FinancingPlan[]>([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [quote, setQuote] = useState<FinancingQuote | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoting, setQuoting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [files, setFiles] = useState<KycFiles>({});
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormValues>({
-    defaultValues: { termMonths: 12, downPayment: 0 },
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
+    defaultValues: { downPayment: 0 },
   });
 
+  const watchedProductId = watch("productId");
+  const watchedPlanId = watch("financingPlanId");
+  const watchedDownPayment = watch("downPayment");
+
   useEffect(() => {
-    async function loadProducts() {
+    async function loadCatalog() {
       try {
-        const response = await fetch(`${API_URL}/api/products`);
-        if (!response.ok) throw new Error("No fue posible cargar los equipos.");
-        const data = await response.json();
-        const list = Array.isArray(data) ? data : [];
-        setProducts(list);
-        const preferred = list.find((product: CatalogProduct) => product.id === selectedProductId) ?? list[0];
-        if (preferred) setValue("productId", preferred.id);
-      } catch {
+        const [productResponse, planResponse] = await Promise.all([
+          fetch(`${API_URL}/api/products`),
+          fetch(`${API_URL}/api/financing/plans`),
+        ]);
+        if (!productResponse.ok) throw new Error("No fue posible cargar los equipos.");
+        if (!planResponse.ok) throw new Error("No fue posible cargar los planes de financiamiento.");
+
+        const productData = await productResponse.json();
+        const planData = await planResponse.json();
+        const productList = Array.isArray(productData) ? productData : [];
+        const planList = Array.isArray(planData) ? planData : [];
+        setProducts(productList);
+        setPlans(planList);
+
+        const preferredProduct = productList.find((product: CatalogProduct) => product.id === selectedProductId) ?? productList[0];
+        const preferredPlan = planList.find((plan: FinancingPlan) => plan.id === selectedPlanId) ?? planList[0];
+        if (preferredProduct) setValue("productId", preferredProduct.id);
+        if (preferredPlan) setValue("financingPlanId", preferredPlan.id);
+      } catch (error) {
         setProducts([]);
+        setPlans([]);
+        setMessage(error instanceof Error ? error.message : "No fue posible cargar las opciones de financiamiento.");
       } finally {
-        setLoadingProducts(false);
+        setLoadingCatalog(false);
       }
     }
-    void loadProducts();
-  }, [selectedProductId, setValue]);
+    void loadCatalog();
+  }, [selectedPlanId, selectedProductId, setValue]);
+
+  useEffect(() => {
+    if (!watchedProductId || !watchedPlanId) {
+      setQuote(null);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setQuoting(true);
+      setQuoteError(null);
+      try {
+        const response = await fetch(`${API_URL}/api/financing/simulate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId: Number(watchedProductId),
+            financingPlanId: watchedPlanId,
+            downPayment: Number(watchedDownPayment || 0),
+          }),
+        });
+        const body = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(body.message || "No fue posible calcular el financiamiento.");
+        setQuote(body as FinancingQuote);
+      } catch (error) {
+        setQuote(null);
+        setQuoteError(error instanceof Error ? error.message : "No fue posible calcular el financiamiento.");
+      } finally {
+        setQuoting(false);
+      }
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [watchedDownPayment, watchedPlanId, watchedProductId]);
 
   const setFile = (key: keyof KycFiles, file?: File) => setFiles((current) => ({ ...current, [key]: file }));
 
   const onSubmit = async (data: FormValues) => {
+    if (!quote) {
+      setMessage("Selecciona un plan vigente y captura un enganche válido antes de enviar la solicitud.");
+      return;
+    }
     if (!files.idFront || !files.addressProof || !files.incomeProof) {
       setMessage("Adjunta identificación, comprobante de domicilio y comprobante de ingresos para continuar.");
       return;
@@ -102,8 +185,8 @@ export default function ApplicationForm() {
         idNumber: data.idNumber,
         monthlyIncome: data.monthlyIncome,
         productId: data.productId,
+        financingPlanId: data.financingPlanId,
         downPayment: data.downPayment,
-        termMonths: data.termMonths,
         agreeBlocking: data.agreeBlocking,
         agreeCreditBureau: data.agreeCreditBureau,
         agreePrivacy: data.agreePrivacy,
@@ -134,8 +217,9 @@ export default function ApplicationForm() {
       if (!documentResponse.ok) throw new Error(documentBody.message || "La solicitud se creó, pero no fue posible cargar todos los documentos.");
 
       setMessage(`Solicitud recibida. Folio ${body.folio}. Conserva este folio para seguimiento.`);
-      reset({ termMonths: 12, downPayment: 0, productId: data.productId });
+      reset({ downPayment: 0, productId: data.productId, financingPlanId: data.financingPlanId });
       setFiles({});
+      setQuote(null);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Ocurrió un error inesperado.");
     } finally {
@@ -152,10 +236,10 @@ export default function ApplicationForm() {
         <div className="mb-12 max-w-3xl">
           <span className="inline-flex rounded-full bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-black/5">Solicitud MoviCrédito</span>
           <h1 className="mt-6 text-4xl font-semibold tracking-[-0.04em] text-slate-950 sm:text-6xl">Tu próximo celular, a tu ritmo.</h1>
-          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Completa tu expediente para iniciar la evaluación. Enviar la solicitud no significa que el crédito haya sido aprobado.</p>
+          <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">Simula tus condiciones y completa tu expediente. Enviar la solicitud no significa que el crédito haya sido aprobado.</p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
           <form onSubmit={handleSubmit(onSubmit)} className="rounded-[32px] bg-white p-6 shadow-sm ring-1 ring-black/5 sm:p-10">
             <Section title="1. Datos personales" subtitle="Identidad y medios de contacto." />
             <div className="grid gap-6 sm:grid-cols-2">
@@ -171,14 +255,31 @@ export default function ApplicationForm() {
             </div>
 
             <div className="my-10 border-t border-black/5" />
-            <Section title="2. Ingresos y financiamiento" subtitle="Información para evaluar capacidad de pago." />
+            <Section title="2. Ingresos y financiamiento" subtitle="La cotización se calcula en el servidor con el plan vigente seleccionado." />
             <div className="grid gap-6 sm:grid-cols-2">
               <Field label="Ocupación"><input {...register("occupation", { required: true })} className={inputClass} /></Field>
               <Field label="Empresa o actividad"><input {...register("employer", { required: true })} className={inputClass} /></Field>
               <Field label="Ingreso mensual"><input {...register("monthlyIncome", { required: true, valueAsNumber: true })} type="number" min="1" className={inputClass} /></Field>
-              <label className={labelClass}>Equipo<select {...register("productId", { required: true, valueAsNumber: true })} className={inputClass} disabled={loadingProducts || products.length === 0}>{products.length === 0 && <option value="">Sin equipos disponibles</option>}{products.map((product) => <option key={product.id} value={product.id}>{product.brand} {product.model} · ${Number(product.price).toLocaleString("es-MX")}</option>)}</select>{loadingProducts && <LoaderCircle className="mt-2 animate-spin text-black/30" size={18} />}</label>
-              <Field label="Enganche"><input {...register("downPayment", { required: true, valueAsNumber: true })} type="number" min="0" className={inputClass} /></Field>
-              <label className={labelClass}>Plazo<select {...register("termMonths", { valueAsNumber: true })} className={inputClass}><option value={6}>6 meses</option><option value={12}>12 meses</option><option value={18}>18 meses</option><option value={24}>24 meses</option></select></label>
+              <label className={labelClass}>Equipo<select {...register("productId", { required: true, valueAsNumber: true })} className={inputClass} disabled={loadingCatalog || products.length === 0}>{products.length === 0 && <option value="">Sin equipos disponibles</option>}{products.map((product) => <option key={product.id} value={product.id}>{product.brand} {product.model} · ${Number(product.price).toLocaleString("es-MX")}</option>)}</select></label>
+              <label className={labelClass}>Plan<select {...register("financingPlanId", { required: true })} className={inputClass} disabled={loadingCatalog || plans.length === 0}>{plans.length === 0 && <option value="">Sin planes disponibles</option>}{plans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} · {plan.termMonths} meses · {(Number(plan.annualInterestRate) * 100).toFixed(2)}% anual</option>)}</select></label>
+              <Field label="Enganche"><input {...register("downPayment", { required: true, valueAsNumber: true })} type="number" min="0" step="0.01" className={inputClass} /></Field>
+            </div>
+
+            <div className="mt-6 rounded-[26px] bg-[#f5f5f7] p-5 ring-1 ring-black/5">
+              {loadingCatalog || quoting ? <div className="flex items-center gap-2 text-sm text-slate-500"><LoaderCircle className="animate-spin" size={17} /> Calculando condiciones…</div> : quote ? (
+                <div>
+                  <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-slate-950">{quote.financingPlanName}</p><p className="mt-1 text-xs text-slate-500">Cotización informativa sujeta a aprobación del crédito.</p></div><span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-black/5">{quote.termMonths} meses</span></div>
+                  <div className="mt-5 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                    <QuoteItem label="Precio" value={currency(quote.price)} />
+                    <QuoteItem label="Enganche" value={currency(quote.downPayment)} />
+                    <QuoteItem label="Financiado" value={currency(quote.financedAmount)} />
+                    <QuoteItem label="Tasa anual" value={`${(quote.annualInterestRate * 100).toFixed(2)}%`} />
+                    <QuoteItem label="Interés" value={currency(quote.interestAmount)} />
+                    <QuoteItem label="Total crédito" value={currency(quote.totalAmount)} />
+                    <div className="col-span-2 rounded-2xl bg-slate-950 p-4 text-white"><p className="text-xs text-white/55">Pago mensual estimado</p><p className="mt-1 text-2xl font-semibold">{currency(quote.monthlyPayment)}</p></div>
+                  </div>
+                </div>
+              ) : <p className="text-sm text-amber-700">{quoteError || "Selecciona un equipo, plan y enganche para calcular tu financiamiento."}</p>}
             </div>
 
             <div className="my-10 border-t border-black/5" />
@@ -215,8 +316,8 @@ export default function ApplicationForm() {
             {message && <div className="mt-6 rounded-2xl bg-slate-950 px-4 py-3 text-sm text-white">{message}</div>}
 
             <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => { reset({ termMonths: 12, downPayment: 0 }); setFiles({}); }} className="rounded-full px-6 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Limpiar</button>
-              <button type="submit" disabled={submitting || loadingProducts || products.length === 0} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50">{submitting ? "Enviando expediente…" : "Enviar solicitud"}<ArrowRight size={16} /></button>
+              <button type="button" onClick={() => { reset({ downPayment: 0 }); setFiles({}); setQuote(null); }} className="rounded-full px-6 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100">Limpiar</button>
+              <button type="submit" disabled={submitting || loadingCatalog || quoting || !quote || products.length === 0 || plans.length === 0} className="inline-flex items-center justify-center gap-2 rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-50">{submitting ? "Enviando expediente…" : "Enviar solicitud"}<ArrowRight size={16} /></button>
             </div>
           </form>
 
@@ -224,7 +325,7 @@ export default function ApplicationForm() {
             <ShieldCheck size={28} />
             <h3 className="mt-5 text-2xl font-semibold tracking-tight">Tu expediente, protegido.</h3>
             <p className="mt-3 text-sm leading-6 text-slate-300">La información se usa para evaluar la solicitud, documentar el crédito y reducir fraude.</p>
-            <div className="mt-7 space-y-4 text-sm text-slate-200">{["Validación de identidad", "Capacidad de pago", "Referencias y documentación", "Consentimientos separados", "Equipo vinculado al crédito aprobado"].map((item) => <div key={item} className="flex gap-3"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white text-slate-950"><Check size={12} /></span>{item}</div>)}</div>
+            <div className="mt-7 space-y-4 text-sm text-slate-200">{["Plan financiero identificado", "Validación de identidad", "Capacidad de pago", "Referencias y documentación", "Consentimientos separados", "Equipo vinculado al crédito aprobado"].map((item) => <div key={item} className="flex gap-3"><span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-white text-slate-950"><Check size={12} /></span>{item}</div>)}</div>
           </aside>
         </div>
       </div>
@@ -232,11 +333,15 @@ export default function ApplicationForm() {
   );
 }
 
-function Section({ title, subtitle, icon }: { title: string; subtitle: string; icon?: React.ReactNode }) {
+function QuoteItem({ label, value }: { label: string; value: string }) {
+  return <div><p className="text-xs text-slate-400">{label}</p><p className="mt-1 font-semibold text-slate-950">{value}</p></div>;
+}
+
+function Section({ title, subtitle, icon }: { title: string; subtitle: string; icon?: ReactNode }) {
   return <div className="mb-7 flex items-center gap-3">{icon ? <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-white">{icon}</div> : <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-white"><Smartphone size={20} /></div>}<div><h2 className="text-xl font-semibold text-slate-950">{title}</h2><p className="text-sm text-slate-500">{subtitle}</p></div></div>;
 }
 
-function Field({ label, children, error = false }: { label: string; children: React.ReactNode; error?: boolean }) {
+function Field({ label, children, error = false }: { label: string; children: ReactNode; error?: boolean }) {
   return <label className="text-sm font-medium text-slate-700">{label}{children}{error && <span className="mt-1 block text-xs text-red-600">Campo requerido</span>}</label>;
 }
 
@@ -244,6 +349,6 @@ function FileField({ label, onFile }: { label: string; onFile: (file?: File) => 
   return <label className="rounded-2xl border border-dashed border-black/15 bg-[#fafafa] p-4 text-sm font-medium text-slate-700">{label}<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(event) => onFile(event.target.files?.[0])} className="mt-3 block w-full text-xs text-slate-500 file:mr-3 file:rounded-full file:border-0 file:bg-slate-950 file:px-4 file:py-2 file:text-xs file:font-medium file:text-white" /></label>;
 }
 
-function Consent({ register, children }: { register: ReturnType<ReturnType<typeof useForm<FormValues>>["register"]>; children: React.ReactNode }) {
+function Consent({ register, children }: { register: UseFormRegisterReturn; children: ReactNode }) {
   return <label className="flex cursor-pointer gap-3 rounded-2xl bg-[#f5f5f7] p-4 text-sm leading-6 text-slate-600"><input {...register} type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-slate-950" /><span>{children}</span></label>;
 }
