@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   BellRing,
@@ -17,6 +17,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { clearMoviCreditoSession, expireMoviCreditoSession, getJwtExpirationMs, isJwtExpired } from "../../utils/session";
 
 const navigation = [
   { to: "/admin", label: "Inicio", icon: LayoutDashboard },
@@ -39,16 +40,43 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const token = sessionStorage.getItem("movicredito_token");
   const storedUser = sessionStorage.getItem("movicredito_user");
-  const user = storedUser ? JSON.parse(storedUser) : null;
 
-  if (!token) return <Navigate to="/login" replace />;
+  const user = useMemo(() => {
+    if (!storedUser) return null;
+    try {
+      return JSON.parse(storedUser);
+    } catch {
+      return null;
+    }
+  }, [storedUser]);
+
+  useEffect(() => {
+    if (!token) return;
+    if (isJwtExpired(token)) {
+      expireMoviCreditoSession();
+      return;
+    }
+
+    const expiration = getJwtExpirationMs(token);
+    if (!expiration) {
+      expireMoviCreditoSession();
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      expireMoviCreditoSession();
+    }, Math.max(0, expiration - Date.now()));
+
+    return () => window.clearTimeout(timeout);
+  }, [token]);
+
+  if (!token || isJwtExpired(token)) return <Navigate to="/login?reason=session-expired" replace />;
 
   const isActive = (to: string) =>
     to === "/admin" ? location.pathname === to : location.pathname.startsWith(to);
 
   const logout = () => {
-    sessionStorage.removeItem("movicredito_token");
-    sessionStorage.removeItem("movicredito_user");
+    clearMoviCreditoSession();
     navigate("/login", { replace: true });
   };
 
