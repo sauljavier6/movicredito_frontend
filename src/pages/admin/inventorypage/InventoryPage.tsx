@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Boxes, Pencil, Plus, RefreshCw, Search, Smartphone, X } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Search, X } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
