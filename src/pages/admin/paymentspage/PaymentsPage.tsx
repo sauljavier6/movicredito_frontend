@@ -6,7 +6,10 @@ const API_URL = import.meta.env.VITE_API_URL || "";
 
 type Payment = {
   id: string;
-  creditId: string;
+  creditId?: string;
+  applicationId?: string;
+  type?: "credit_payment" | "down_payment";
+  providerPaymentId?: string;
   amount: number | string;
   method: string;
   externalReference?: string;
@@ -77,7 +80,7 @@ export default function PaymentsPage() {
         <div className="mt-8 flex justify-end"><button onClick={()=>setModalOpen(true)} className="inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-medium text-white"><Plus size={16}/> Registrar pago</button></div>
         <div className="mt-5"><div className="overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-black/5">
             <div className="border-b border-black/5 px-6 py-5"><h2 className="font-semibold">Movimientos recientes</h2></div>
-            <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Fecha</th><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Método</th><th className="px-6 py-4">Referencia</th><th className="px-6 py-4 text-right">Monto</th></tr></thead><tbody className="divide-y divide-black/5">{payments.map((payment) => <tr key={payment.id}><td className="px-6 py-4 text-black/55">{new Date(payment.paidAt).toLocaleString("es-MX")}</td><td className="px-6 py-4 font-mono text-xs">{payment.creditId}</td><td className="px-6 py-4 capitalize">{payment.method}</td><td className="px-6 py-4 text-black/45">{payment.externalReference || "—"}</td><td className="px-6 py-4 text-right font-semibold">${Number(payment.amount).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td></tr>)}{!payments.length && <tr><td colSpan={5} className="px-6 py-12 text-center text-black/35">No hay pagos registrados todavía.</td></tr>}</tbody></table></div>
+            <div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Fecha</th><th className="px-6 py-4">Tipo</th><th className="px-6 py-4">Crédito / Solicitud</th><th className="px-6 py-4">Método</th><th className="px-6 py-4">Referencia</th><th className="px-6 py-4 text-right">Monto</th></tr></thead><tbody className="divide-y divide-black/5">{payments.map((payment) => <tr key={payment.id}><td className="px-6 py-4 text-black/55">{new Date(payment.paidAt).toLocaleString("es-MX")}</td><td className="px-6 py-4">{payment.type==="down_payment"?"Enganche":"Pago de crédito"}</td><td className="px-6 py-4 font-mono text-xs">{payment.creditId||payment.applicationId||"—"}</td><td className="px-6 py-4 capitalize">{payment.method}</td><td className="px-6 py-4 text-black/45">{payment.externalReference || "—"}</td><td className="px-6 py-4 text-right font-semibold">${Number(payment.amount).toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td></tr>)}{!payments.length && <tr><td colSpan={6} className="px-6 py-12 text-center text-black/35">No hay pagos registrados todavía.</td></tr>}</tbody></table></div>
           </div>
       </div>
       </div>
