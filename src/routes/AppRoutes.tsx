@@ -16,7 +16,6 @@ import FinancingPlansPage from "../pages/admin/financingplanspage/FinancingPlans
 import HomePage from "../pages/admin/homepage/HomePage";
 import InventoryPage from "../pages/admin/inventorypage/InventoryPage";
 import PaymentsPage from "../pages/admin/paymentspage/PaymentsPage";
-import PhonesPage from "../pages/admin/phonespage/PhonesPage";
 import AdminModulePage from "../pages/admin/shared/AdminModulePage";
 import CatalogoPage from "../pages/customer/catalogopage/CatalogoPage";
 import ContractPage from "../pages/customer/contractpage/ContractPage";
@@ -39,7 +38,7 @@ const AppRoutes = () => {
         <Route index element={<HomePage />} />
         <Route path="clientes" element={<CustomerPage />} />
         <Route path="solicitudes" element={<ApplicationsPage />} />
-        <Route path="catalogo" element={<PhonesPage />} />
+        <Route path="catalogo" element={<Navigate to="/admin/inventario" replace />} />
         <Route path="planes-financiamiento" element={<FinancingPlansPage />} />
         <Route path="creditos" element={<FinancedPage />} />
         <Route path="pagos" element={<PaymentsPage />} />
