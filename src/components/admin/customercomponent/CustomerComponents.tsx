@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, UserRound } from "lucide-react";
+import { Pencil, Search, UserRound, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -17,6 +18,8 @@ type Customer = {
 
 export default function CustomerComponents() {
   const token = sessionStorage.getItem("movicredito_token");
+  const queryClient=useQueryClient();
+  const [editing,setEditing]=useState<Customer|null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -42,6 +45,7 @@ export default function CustomerComponents() {
 
   useEffect(() => { void load(); }, []);
 
+  const save=async(e:React.FormEvent)=>{e.preventDefault();if(!editing)return;const r=await fetch(`${API_URL}/api/customers/${editing.id}`,{method:"PATCH",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(editing)});const b=await r.json().catch(()=>({}));if(!r.ok){setError(b.message||"No fue posible actualizar el cliente.");return;}setEditing(null);await queryClient.invalidateQueries({queryKey:["dashboard"]});await load();};
   const filtered = useMemo(() => {
     const value = search.trim().toLowerCase();
     if (!value) return customers;
@@ -61,9 +65,6 @@ export default function CustomerComponents() {
             <h1 className="mt-1 text-4xl font-semibold tracking-[-0.045em] text-[#1d1d1f]">Clientes</h1>
             <p className="mt-2 text-sm text-black/45">Clientes creados por el flujo real de aprobación y activación de crédito.</p>
           </div>
-          <button onClick={() => void load()} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5" aria-label="Actualizar clientes">
-            <RefreshCw size={17} />
-          </button>
         </div>
 
         <div className="mt-7 flex max-w-xl items-center gap-2 rounded-full bg-white p-1.5 shadow-sm ring-1 ring-black/5">
@@ -88,7 +89,7 @@ export default function CustomerComponents() {
                   <th className="px-6 py-4">CURP</th>
                   <th className="px-6 py-4">RFC</th>
                   <th className="px-6 py-4">Estado</th>
-                  <th className="px-6 py-4">Alta</th>
+                  <th className="px-6 py-4">Alta</th><th className="px-6 py-4">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
@@ -104,11 +105,11 @@ export default function CustomerComponents() {
                     <td className="px-6 py-4 font-mono text-xs">{customer.curp || "—"}</td>
                     <td className="px-6 py-4 font-mono text-xs">{customer.rfc || "—"}</td>
                     <td className="px-6 py-4"><span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs font-medium text-black/60">{customer.status}</span></td>
-                    <td className="px-6 py-4 text-black/45">{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString("es-MX") : "—"}</td>
+                    <td className="px-6 py-4 text-black/45">{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString("es-MX") : "—"}</td><td className="px-6 py-4"><button onClick={()=>setEditing({...customer})} className="rounded-full bg-[#f5f5f7] p-2"><Pencil size={14}/></button></td>
                   </tr>
                 ))}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={6} className="px-6 py-14 text-center text-black/35">No hay clientes para mostrar.</td></tr>
+                  <tr><td colSpan={7} className="px-6 py-14 text-center text-black/35">No hay clientes para mostrar.</td></tr>
                 )}
                 {loading && (
                   <tr><td colSpan={6} className="px-6 py-14 text-center text-black/35">Consultando clientes…</td></tr>
@@ -118,6 +119,7 @@ export default function CustomerComponents() {
           </div>
         </div>
       </div>
+      {editing&&<div className="fixed inset-0 z-[70] grid place-items-center bg-black/30 p-4 backdrop-blur-sm"><form onSubmit={save} className="w-full max-w-xl rounded-[30px] bg-white p-7 shadow-2xl"><div className="flex justify-between"><div><h2 className="text-xl font-semibold">Editar cliente</h2><p className="text-sm text-black/40">Actualiza los datos de contacto y expediente.</p></div><button type="button" onClick={()=>setEditing(null)} className="rounded-full bg-[#f5f5f7] p-2"><X size={17}/></button></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{(["fullName","email","phone","curp","rfc","address"] as const).map(k=><label key={k} className={k==="address"?"sm:col-span-2 text-sm":"text-sm"}>{({fullName:"Nombre",email:"Correo",phone:"Teléfono",curp:"CURP",rfc:"RFC",address:"Dirección"} as const)[k]}<input value={editing[k]||""} onChange={e=>setEditing({...editing,[k]:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3"/></label>)}<label className="text-sm">Estado<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3"><option value="active">Activo</option><option value="inactive">Inactivo</option></select></label></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setEditing(null)} className="rounded-full px-5 py-3 text-sm">Cancelar</button><button className="rounded-full bg-black px-6 py-3 text-sm text-white">Guardar cambios</button></div></form></div>}
     </section>
   );
 }
