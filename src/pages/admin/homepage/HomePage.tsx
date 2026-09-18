@@ -1,13 +1,23 @@
-import { ArrowUpRight, CreditCard, Smartphone, Users, WalletCards } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowUpRight, CreditCard, RefreshCw, Smartphone, Users, WalletCards } from "lucide-react";
 
-const metrics = [
-  { label: "Clientes", value: "—", detail: "Sincronizado al conectar métricas", icon: Users },
-  { label: "Créditos activos", value: "—", detail: "Cartera vigente", icon: CreditCard },
-  { label: "Cobranza del mes", value: "—", detail: "Pagos aplicados", icon: WalletCards },
-  { label: "Equipos financiados", value: "—", detail: "Dispositivos asignados", icon: Smartphone },
-];
+const API_URL = import.meta.env.VITE_API_URL || "";
+type DashboardData = { metrics:{customers:number;activeCredits:number;monthCollections:number;financedDevices:number}; deviceSecurity:{protected:number;pendingEnrollment:number;restricted:number}; recentPayments:Array<{id:string;amount:number|string;method:string;type?:string;paidAt:string}> };
+
+
 
 export default function HomePage() {
+  const [data,setData]=useState<DashboardData|null>(null);
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState<string|null>(null);
+  const load=async()=>{const token=sessionStorage.getItem("movicredito_token");if(!token)return;setLoading(true);setError(null);try{const r=await fetch(`${API_URL}/api/dashboard`,{headers:{Authorization:`Bearer ${token}`}});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.message||"No fue posible cargar el dashboard.");setData(b);}catch(e){setError((e as Error).message)}finally{setLoading(false)}};
+  useEffect(()=>{void load()},[]);
+  const metrics=[
+    {label:"Clientes",value:data?String(data.metrics.customers):"—",detail:"Clientes registrados",icon:Users},
+    {label:"Créditos activos",value:data?String(data.metrics.activeCredits):"—",detail:"Cartera vigente y vencida",icon:CreditCard},
+    {label:"Cobranza del mes",value:data?`${Number(data.metrics.monthCollections).toLocaleString("es-MX",{minimumFractionDigits:2})}`:"—",detail:"Pagos aplicados este mes",icon:WalletCards},
+    {label:"Equipos financiados",value:data?String(data.metrics.financedDevices):"—",detail:"Dispositivos asignados",icon:Smartphone},
+  ];
   return (
     <div className="min-h-[calc(100vh-72px)] bg-white px-6 py-8 sm:px-8 lg:px-12 lg:py-11">
       <div className="mx-auto max-w-7xl">
@@ -16,15 +26,15 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-black/30">Resumen operativo</p>
             <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-[#1d1d1f] sm:text-5xl">Todo bajo control.</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-black/45">
-              Solicitudes, cartera, cobranza y dispositivos en una vista simple. Los indicadores aparecerán en cuanto el módulo de métricas esté conectado.
+              Solicitudes, cartera, cobranza y dispositivos en una vista simple. Los indicadores se alimentan directamente de la operación registrada en MoviCrédito.
             </p>
           </div>
-          <a
+          <div className="flex gap-2"><button onClick={()=>void load()} disabled={loading} className="inline-flex w-fit items-center gap-2 rounded-full bg-[#f5f5f7] px-5 py-3 text-sm font-medium"><RefreshCw size={16} className={loading?"animate-spin":""}/> Actualizar</button><a
             href="/admin/solicitudes"
             className="inline-flex w-fit items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-black/80"
           >
             Revisar solicitudes <ArrowUpRight size={16} />
-          </a>
+          </a></div>
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -49,14 +59,9 @@ export default function HomePage() {
                 <p className="text-sm font-semibold">Actividad financiera</p>
                 <p className="mt-1 text-xs text-black/35">Últimos movimientos relevantes</p>
               </div>
-              <span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs text-black/40">Próxima conexión API</span>
+              <span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs text-black/40">{loading?"Actualizando…":"Datos reales"}</span>
             </div>
-            <div className="mt-8 flex min-h-56 items-center justify-center rounded-[24px] bg-[#f5f5f7] px-6 text-center">
-              <div>
-                <p className="font-medium text-black/55">Aún no hay datos operativos para mostrar</p>
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-black/35">Aquí aparecerán colocación, pagos y mora usando datos reales del backend. No mostramos cifras ficticias.</p>
-              </div>
-            </div>
+            <div className="mt-8 min-h-56 overflow-hidden rounded-[24px] bg-[#f5f5f7]">{error?<div className="p-6 text-sm text-red-600">{error}</div>:data?.recentPayments.length?<div className="divide-y divide-black/5">{data.recentPayments.map(p=><div key={p.id} className="flex items-center justify-between px-5 py-4"><div><p className="text-sm font-medium">{p.type==="down_payment"?"Enganche":"Pago de crédito"}</p><p className="text-xs capitalize text-black/35">{p.method} · {new Date(p.paidAt).toLocaleString("es-MX")}</p></div><p className="font-semibold">${Number(p.amount).toLocaleString("es-MX",{minimumFractionDigits:2})}</p></div>)}</div>:<div className="flex min-h-56 items-center justify-center text-sm text-black/35">Sin pagos aplicados todavía.</div>}</div>
           </section>
 
           <section className="rounded-[30px] bg-[#1d1d1f] p-7 text-white">
@@ -66,7 +71,7 @@ export default function HomePage() {
               {["Protección activa", "Pendientes de enrolar", "Con restricción"].map((label) => (
                 <div key={label} className="flex items-center justify-between rounded-2xl bg-white/5 px-4 py-3">
                   <span className="text-sm text-white/60">{label}</span>
-                  <span className="text-lg font-semibold">—</span>
+                  <span className="text-lg font-semibold">{label==="Protección activa"?(data?.deviceSecurity.protected??"—"):label==="Pendientes de enrolar"?(data?.deviceSecurity.pendingEnrollment??"—"):(data?.deviceSecurity.restricted??"—")}</span>
                 </div>
               ))}
             </div>
