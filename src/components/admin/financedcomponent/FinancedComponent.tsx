@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search } from "lucide-react";
+import { Pencil, Search, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -24,6 +25,8 @@ const money = (value: number | string) => Number(value || 0).toLocaleString("es-
 
 export default function FinancedComponent() {
   const token = sessionStorage.getItem("movicredito_token");
+  const queryClient=useQueryClient();
+  const [editing,setEditing]=useState<Credit|null>(null);
   const headers = { Authorization: `Bearer ${token}` };
   const [credits, setCredits] = useState<Credit[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -64,6 +67,7 @@ export default function FinancedComponent() {
 
   useEffect(() => { void load(); }, []);
 
+  const save=async(e:React.FormEvent)=>{e.preventDefault();if(!editing)return;const r=await fetch(`${API_URL}/api/credits/${editing.id}`,{method:"PATCH",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({status:editing.status,startDate:editing.startDate})});const b=await r.json().catch(()=>({}));if(!r.ok){setError(b.message||"No fue posible actualizar el crédito.");return;}setEditing(null);await queryClient.invalidateQueries({queryKey:["dashboard"]});await load();};
   const rows = useMemo(() => credits.map((credit) => {
     const customer = customers.find((item) => item.id === credit.customerId);
     const device = devices.find((item) => item.id === credit.deviceId);
@@ -94,7 +98,6 @@ export default function FinancedComponent() {
             <h1 className="mt-1 text-4xl font-semibold tracking-[-0.045em] text-[#1d1d1f]">Créditos</h1>
             <p className="mt-2 text-sm text-black/45">Créditos activados después de contrato, enganche y asignación de dispositivo.</p>
           </div>
-          <button onClick={() => void load()} className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5" aria-label="Actualizar créditos"><RefreshCw size={17} /></button>
         </div>
 
         <div className="mt-7 flex max-w-xl items-center gap-2 rounded-full bg-white p-1.5 shadow-sm ring-1 ring-black/5">
@@ -108,7 +111,7 @@ export default function FinancedComponent() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1180px] text-left text-sm">
               <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35">
-                <tr><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Equipo</th><th className="px-6 py-4">Principal</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Pago mensual</th><th className="px-6 py-4">Plazo</th><th className="px-6 py-4">Estado</th><th className="px-6 py-4">Administración</th></tr>
+                <tr><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Equipo</th><th className="px-6 py-4">Principal</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Pago mensual</th><th className="px-6 py-4">Plazo</th><th className="px-6 py-4">Estado</th><th className="px-6 py-4">Administración</th><th className="px-6 py-4">Acción</th></tr>
               </thead>
               <tbody className="divide-y divide-black/5">
                 {filtered.map((credit) => (
@@ -120,16 +123,17 @@ export default function FinancedComponent() {
                     <td className="px-6 py-4">{money(credit.installment)}</td>
                     <td className="px-6 py-4">{credit.termMonths} meses</td>
                     <td className="px-6 py-4"><span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs font-medium text-black/60">{credit.status}</span></td>
-                    <td className="px-6 py-4"><span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs font-medium text-black/60">{credit.managementStatus}</span></td>
+                    <td className="px-6 py-4"><span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs font-medium text-black/60">{credit.managementStatus}</span></td><td className="px-6 py-4"><button onClick={()=>setEditing(credits.find(x=>x.id===credit.id)||null)} className="rounded-full bg-[#f5f5f7] p-2"><Pencil size={14}/></button></td>
                   </tr>
                 ))}
-                {!loading && filtered.length === 0 && <tr><td colSpan={8} className="px-6 py-14 text-center text-black/35">No hay créditos para mostrar.</td></tr>}
+                {!loading && filtered.length === 0 && <tr><td colSpan={9} className="px-6 py-14 text-center text-black/35">No hay créditos para mostrar.</td></tr>}
                 {loading && <tr><td colSpan={8} className="px-6 py-14 text-center text-black/35">Consultando créditos…</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
       </div>
+      {editing&&<div className="fixed inset-0 z-[70] grid place-items-center bg-black/30 p-4 backdrop-blur-sm"><form onSubmit={save} className="w-full max-w-lg rounded-[30px] bg-white p-7 shadow-2xl"><div className="flex justify-between"><div><h2 className="text-xl font-semibold">Editar crédito</h2><p className="text-sm text-black/40">Solo campos operativos seguros. Los importes y calendario no se alteran manualmente.</p></div><button type="button" onClick={()=>setEditing(null)} className="rounded-full bg-[#f5f5f7] p-2"><X size={17}/></button></div><div className="mt-6 space-y-4"><label className="block text-sm">Estado<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3"><option value="pending">Pendiente</option><option value="active">Activo</option><option value="overdue">Vencido</option><option value="paid">Pagado</option><option value="cancelled">Cancelado</option></select></label><label className="block text-sm">Fecha de inicio<input type="date" value={editing.startDate||""} onChange={e=>setEditing({...editing,startDate:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3"/></label></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setEditing(null)} className="rounded-full px-5 py-3 text-sm">Cancelar</button><button className="rounded-full bg-black px-6 py-3 text-sm text-white">Guardar cambios</button></div></form></div>}
     </section>
   );
 }
