@@ -16,7 +16,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { clearMoviCreditoSession, expireMoviCreditoSession, getJwtExpirationMs, isJwtExpired } from "../../utils/session";
+import { clearMoviCreditoSession, restoreMoviCreditoSession } from "../../utils/session";
 
 const navigation = [
   { to: "/admin", label: "Inicio", icon: LayoutDashboard },
@@ -36,7 +36,8 @@ const AppLayout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const token = sessionStorage.getItem("movicredito_token");
+  const [authChecking, setAuthChecking] = useState(true);
+  const [token, setToken] = useState(() => sessionStorage.getItem("movicredito_token"));
   const storedUser = sessionStorage.getItem("movicredito_user");
 
   const user = useMemo(() => {
@@ -49,32 +50,25 @@ const AppLayout = () => {
   }, [storedUser]);
 
   useEffect(() => {
-    if (!token) return;
-    if (isJwtExpired(token)) {
-      expireMoviCreditoSession();
-      return;
-    }
+    let active = true;
+    void restoreMoviCreditoSession().then((restored) => {
+      if (!active) return;
+      setToken(restored);
+      setAuthChecking(false);
+    });
+    return () => { active = false; };
+  }, []);
 
-    const expiration = getJwtExpirationMs(token);
-    if (!expiration) {
-      expireMoviCreditoSession();
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      expireMoviCreditoSession();
-    }, Math.max(0, expiration - Date.now()));
-
-    return () => window.clearTimeout(timeout);
-  }, [token]);
-
-  if (!token || isJwtExpired(token)) return <Navigate to="/login?reason=session-expired" replace />;
+  if (authChecking) return <div className="flex min-h-screen items-center justify-center bg-[#f5f5f7] text-sm text-black/45">Restaurando sesión…</div>;
+  if (!token) return <Navigate to="/login?reason=session-expired" replace />;
 
   const isActive = (to: string) =>
     to === "/admin" ? location.pathname === to : location.pathname.startsWith(to);
 
-  const logout = () => {
+  const logout = async () => {
+    try { await fetch(`${import.meta.env.VITE_API_URL || ""}/api/auth/logout`, { method: "POST", credentials: "include" }); } catch {}
     clearMoviCreditoSession();
+    setToken(null);
     navigate("/login", { replace: true });
   };
 
