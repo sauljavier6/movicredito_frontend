@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   Smartphone,
+  ShieldCheck,
   Users,
   X,
 } from "lucide-react";
@@ -30,6 +31,7 @@ const navigation = [
   { to: "/admin/ordenes-dispositivo", label: "Órdenes de dispositivo", icon: ListChecks },
   { to: "/admin/cobranza", label: "Cobranza", icon: BellRing },
   { to: "/admin/auditoria", label: "Auditoría", icon: History },
+  { to: "/admin/seguridad", label: "Seguridad", icon: ShieldCheck },
 ];
 
 const AppLayout = () => {
