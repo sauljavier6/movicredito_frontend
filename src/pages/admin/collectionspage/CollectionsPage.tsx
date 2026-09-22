@@ -127,7 +127,7 @@ export default function CollectionsPage() {
                     <td className="px-6 py-4">{item.overdueCount}</td>
                     <td className="px-6 py-4">${item.overdueAmount.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td>
                     <td className="px-6 py-4">${item.balance.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td>
-                    <td className="px-6 py-4"><span className={`rounded-full px-3 py-1.5 text-xs font-medium ${item.recommendedAction === "lock" ? "bg-red-50 text-red-700" : item.recommendedAction === "restrict" ? "bg-amber-50 text-amber-700" : "bg-[#f5f5f7] text-black/60"}`}>{labels[item.recommendedAction]}</span></td>
+                    <td className="px-6 py-4"><span className={`inline-flex max-w-[150px] items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-xs font-medium leading-tight ${item.recommendedAction === "lock" ? "bg-red-50 text-red-700" : item.recommendedAction === "restrict" ? "bg-amber-50 text-amber-700" : "bg-[#f5f5f7] text-black/60"}`}>{labels[item.recommendedAction]}</span></td>
                     <td className="px-6 py-4 text-right">
                       {(["restrict", "lock"] as string[]).includes(item.recommendedAction) ? (
                         <button disabled={queueingId === item.creditId} onClick={() => void queueAction(item.creditId)} className="rounded-full bg-black px-3.5 py-2 text-xs font-medium text-white transition hover:bg-black/75 disabled:opacity-40">
