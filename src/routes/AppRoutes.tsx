@@ -16,6 +16,7 @@ import FinancingPlansPage from "../pages/admin/financingplanspage/FinancingPlans
 import HomePage from "../pages/admin/homepage/HomePage";
 import InventoryPage from "../pages/admin/inventorypage/InventoryPage";
 import PaymentsPage from "../pages/admin/paymentspage/PaymentsPage";
+import SecurityPage from "../pages/admin/securitypage/SecurityPage";
 import AdminModulePage from "../pages/admin/shared/AdminModulePage";
 import CatalogoPage from "../pages/customer/catalogopage/CatalogoPage";
 import ContractPage from "../pages/customer/contractpage/ContractPage";
@@ -46,6 +47,7 @@ const AppRoutes = () => {
         <Route path="dispositivos" element={<DevicesPage />} />
         <Route path="ordenes-dispositivo" element={<DeviceActionsPage />} />
         <Route path="cobranza" element={<CollectionsPage />} />
+        <Route path="seguridad" element={<SecurityPage />} />
         <Route path="reportes" element={<AdminModulePage title="Reportes" description="Visualiza colocación, cartera, recuperación, mora, inventario y desempeño de la operación." icon={<Landmark size={24} />} />} />
         <Route path="auditoria" element={<AdminModulePage title="Auditoría" description="Consulta acciones sensibles como aprobaciones, cambios de crédito, asignaciones y bloqueos de dispositivos." icon={<History size={24} />} />} />
       </Route>
