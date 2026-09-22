@@ -135,7 +135,7 @@ export default function DeviceActionsPage() {
                   <tr key={item.id}>
                     <td className="px-6 py-4 text-xs text-black/45">{new Date(item.createdAt).toLocaleString("es-MX")}</td>
                     <td className="px-6 py-4 font-semibold capitalize">{item.action}</td>
-                    <td className="px-6 py-4"><StatusBadge status={item.status} simulated={item.metadata?.simulated} /></td>
+                    <td className="px-6 py-4 align-middle"><StatusBadge status={item.status} simulated={item.metadata?.simulated} /></td>
                     <td className="px-6 py-4 font-mono text-xs">{item.creditId || "—"}</td>
                     <td className="px-6 py-4 font-mono text-xs">{item.deviceId}</td>
                     <td className="max-w-xs px-6 py-4 text-xs leading-5 text-black/50">{item.reason || item.reasonCode || item.lastError || "—"}</td>
@@ -172,5 +172,5 @@ function StatusBadge({ status, simulated }: { status: DeviceAction["status"]; si
     failed: "bg-red-50 text-red-700",
     cancelled: "bg-[#f5f5f7] text-black/45",
   };
-  return <span className={`rounded-full px-3 py-1.5 text-xs font-medium ${styles[status]}`}>{status}{simulated ? " · simulado" : ""}</span>;
+  return <span className={`inline-flex max-w-full items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium leading-none ${styles[status]}`}>{status}{simulated ? " · simulado" : ""}</span>;
 }
