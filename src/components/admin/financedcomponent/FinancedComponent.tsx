@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Pagination from "../shared/Pagination";
 import { Eye, Pencil, Search, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -16,6 +17,7 @@ type Credit = {
   balance: number | string;
   startDate?: string;
   status: string;
+  customer?:Customer|null;device?:Device|null;product?:Product|null;
 };
 type Customer = { id: string; fullName: string; email: string };
 type Device = { id: string; productId: number; imei: string; status: string; managementStatus: string };
@@ -37,60 +39,22 @@ export default function FinancedComponent() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const pageSize=10;
 
   const load = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const [creditsResponse, customersResponse, devicesResponse, productsResponse] = await Promise.all([
-        fetch(`${API_URL}/api/credits`, { headers }),
-        fetch(`${API_URL}/api/customers`, { headers }),
-        fetch(`${API_URL}/api/devices`, { headers }),
-        fetch(`${API_URL}/api/products/admin`, { headers }),
-      ]);
-      const responses = [creditsResponse, customersResponse, devicesResponse, productsResponse];
-      if (responses.some((response) => !response.ok)) {
-        const failed = responses.find((response) => !response.ok)!;
-        const body = await failed.json().catch(() => ({}));
-        throw new Error(body.message || "No fue posible consultar los créditos.");
-      }
-      const [creditRows, customerRows, deviceRows, productRows] = await Promise.all(responses.map((response) => response.json()));
-      setCredits(Array.isArray(creditRows) ? creditRows : []);
-      setCustomers(Array.isArray(customerRows) ? customerRows : []);
-      setDevices(Array.isArray(deviceRows) ? deviceRows : []);
-      setProducts(Array.isArray(productRows) ? productRows : []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No fue posible consultar los créditos.");
-      setCredits([]);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);setError(null);
+    try{const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(search.trim())params.set("search",search.trim());const response=await fetch(`${API_URL}/api/credits?${params}`,{headers});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||"No fue posible consultar los créditos.");setCredits(body.items||[]);setTotal(body.pagination?.total||0);}
+    catch(err){setError(err instanceof Error?err.message:"No fue posible consultar los créditos.");setCredits([]);}finally{setLoading(false);}
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id); }, [page,search]);
+  useEffect(()=>setPage(1),[search]);
 
   const openStatement=async(id:string)=>{setStatementLoading(true);setError(null);try{const r=await fetch(`${API_URL}/api/credits/${id}/schedule`,{headers});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.message||"No fue posible consultar el estado de cuenta.");setStatement(b);}catch(e){setError((e as Error).message);}finally{setStatementLoading(false);}};
   const save=async(e:React.FormEvent)=>{e.preventDefault();if(!editing)return;const r=await fetch(`${API_URL}/api/credits/${editing.id}`,{method:"PATCH",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({status:editing.status,startDate:editing.startDate})});const b=await r.json().catch(()=>({}));if(!r.ok){setError(b.message||"No fue posible actualizar el crédito.");return;}setEditing(null);await queryClient.invalidateQueries({queryKey:["dashboard"]});await load();};
-  const rows = useMemo(() => credits.map((credit) => {
-    const customer = customers.find((item) => item.id === credit.customerId);
-    const device = devices.find((item) => item.id === credit.deviceId);
-    const product = products.find((item) => item.id === device?.productId);
-    return {
-      ...credit,
-      customerName: customer?.fullName || `Cliente ${credit.customerId.slice(0, 8)}`,
-      customerEmail: customer?.email || "",
-      deviceName: product ? `${product.brand} ${product.model} ${product.storage}` : device ? `Equipo #${device.productId}` : "Sin equipo",
-      imei: device?.imei || "",
-      managementStatus: device?.managementStatus || "—",
-      installment: credit.termMonths > 0 ? Number(credit.totalAmount) / credit.termMonths : 0,
-    };
-  }), [credits, customers, devices, products]);
+  const rows = useMemo(() => credits.map((credit) => ({...credit,customerName:credit.customer?.fullName||`Cliente ${credit.customerId.slice(0,8)}`,customerEmail:credit.customer?.email||"",deviceName:credit.product?`${credit.product.brand} ${credit.product.model} ${credit.product.storage}`:"Sin equipo",imei:credit.device?.imei||"",managementStatus:credit.device?.managementStatus||"—",installment:credit.termMonths>0?Number(credit.totalAmount)/credit.termMonths:0})),[credits]);
 
-  const filtered = useMemo(() => {
-    const value = search.trim().toLowerCase();
-    if (!value) return rows;
-    return rows.filter((row) => [row.customerName, row.customerEmail, row.deviceName, row.imei, row.id].some((field) => field.toLowerCase().includes(value)));
-  }, [rows, search]);
+
 
   return (
     <section className="min-h-screen bg-[#f5f5f7] px-4 py-8 md:px-8">
@@ -117,7 +81,7 @@ export default function FinancedComponent() {
                 <tr><th className="px-6 py-4">Cliente</th><th className="px-6 py-4">Equipo</th><th className="px-6 py-4">Principal</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Pago mensual</th><th className="px-6 py-4">Plazo</th><th className="px-6 py-4">Estado</th><th className="px-6 py-4">Administración</th><th className="px-6 py-4">Acción</th></tr>
               </thead>
               <tbody className="divide-y divide-black/5">
-                {filtered.map((credit) => (
+                {rows.map((credit) => (
                   <tr key={credit.id} className="hover:bg-black/[0.015]">
                     <td className="px-6 py-4"><p className="font-medium">{credit.customerName}</p><p className="mt-0.5 text-xs text-black/40">{credit.customerEmail || credit.customerId}</p></td>
                     <td className="px-6 py-4"><p>{credit.deviceName}</p><p className="mt-0.5 font-mono text-xs text-black/40">{credit.imei || "—"}</p></td>
@@ -129,11 +93,11 @@ export default function FinancedComponent() {
                     <td className="px-6 py-4"><span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs font-medium text-black/60">{credit.managementStatus}</span></td><td className="px-6 py-4"><div className="flex gap-2"><button title="Ver estado de cuenta" onClick={()=>void openStatement(credit.id)} className="rounded-full bg-[#f5f5f7] p-2"><Eye size={14}/></button><button title="Editar" onClick={()=>setEditing(credits.find(x=>x.id===credit.id)||null)} className="rounded-full bg-[#f5f5f7] p-2"><Pencil size={14}/></button></div></td>
                   </tr>
                 ))}
-                {!loading && filtered.length === 0 && <tr><td colSpan={9} className="px-6 py-14 text-center text-black/35">No hay créditos para mostrar.</td></tr>}
+                {!loading && rows.length === 0 && <tr><td colSpan={9} className="px-6 py-14 text-center text-black/35">No hay créditos para mostrar.</td></tr>}
                 {loading && <tr><td colSpan={8} className="px-6 py-14 text-center text-black/35">Consultando créditos…</td></tr>}
               </tbody>
             </table>
-          </div>
+          </div><Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
       {(statementLoading||statement)&&<div className="fixed inset-0 z-[75] flex justify-end bg-black/30 backdrop-blur-sm"><div className="h-full w-full max-w-4xl overflow-y-auto bg-[#f5f5f7] p-5 shadow-2xl sm:p-8">{statementLoading?<div className="grid h-full place-items-center text-sm text-black/40">Consultando estado de cuenta…</div>:statement&&<><div className="flex items-start justify-between gap-4"><div><p className="text-sm text-black/40">Estado de cuenta</p><h2 className="mt-1 text-3xl font-semibold tracking-[-.04em]">{statement.customer?.fullName||"Crédito"}</h2><p className="mt-1 text-sm text-black/45">{statement.product?`${statement.product.brand} ${statement.product.model} ${statement.product.storage}`:""}{statement.device?.imei?` · IMEI ${statement.device.imei}`:""}</p></div><button onClick={()=>setStatement(null)} className="rounded-full bg-white p-3 shadow-sm"><X size={18}/></button></div><div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Summary label="Saldo actual" value={money(statement.credit.balance)}/><Summary label="Monto total" value={money(statement.credit.totalAmount)}/><Summary label="Mensualidad" value={money(Number(statement.credit.totalAmount)/statement.credit.termMonths)}/><Summary label="Plazo" value={`${statement.credit.termMonths} meses`}/></div><div className="mt-6 overflow-hidden rounded-[24px] bg-white shadow-sm ring-1 ring-black/5"><div className="px-5 py-4"><h3 className="font-semibold">Plan de pagos</h3><p className="text-xs text-black/40">Calendario y avance de cada mensualidad.</p></div><div className="overflow-x-auto"><table className="w-full min-w-[650px] text-sm"><thead className="bg-[#fafafa] text-left text-[11px] uppercase text-black/35"><tr><th className="px-5 py-3">#</th><th className="px-5 py-3">Vencimiento</th><th className="px-5 py-3">Cuota</th><th className="px-5 py-3">Pagado</th><th className="px-5 py-3">Pendiente</th><th className="px-5 py-3">Estado</th></tr></thead><tbody className="divide-y divide-black/5">{statement.installments?.map((item:any)=><tr key={item.id}><td className="px-5 py-3 font-medium">{item.number}</td><td className="px-5 py-3">{item.dueDate}</td><td className="px-5 py-3">{money(item.amount)}</td><td className="px-5 py-3">{money(item.paidAmount)}</td><td className="px-5 py-3 font-medium">{money(Math.max(0,Number(item.amount)-Number(item.paidAmount)))}</td><td className="px-5 py-3"><span className="rounded-full bg-[#f5f5f7] px-2.5 py-1 text-xs capitalize">{item.status}</span></td></tr>)}</tbody></table></div></div><div className="mt-6 overflow-hidden rounded-[24px] bg-white shadow-sm ring-1 ring-black/5"><div className="px-5 py-4"><h3 className="font-semibold">Historial de pagos</h3><p className="text-xs text-black/40">Movimientos aplicados a este crédito.</p></div>{statement.payments?.length?<div className="divide-y divide-black/5">{statement.payments.map((p:any)=><div key={p.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-4"><div><p className="text-sm font-medium">{new Date(p.paidAt).toLocaleString("es-MX")}</p><p className="text-xs text-black/40">{p.method} · {p.externalReference||"Sin referencia"}</p></div><div className="text-right"><p className="font-semibold">{money(p.amount)}</p><p className="text-xs capitalize text-black/40">{p.status}</p></div></div>)}</div>:<p className="px-5 pb-5 text-sm text-black/35">Aún no hay pagos registrados.</p>}</div></>}</div></div>}
