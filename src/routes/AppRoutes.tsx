@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { Landmark } from "lucide-react";
 
 import AppLayout from "../components/layouts/AppLayout";
 import AuthLayout from "../components/layouts/AuthLayout";
@@ -18,7 +17,7 @@ import HomePage from "../pages/admin/homepage/HomePage";
 import InventoryPage from "../pages/admin/inventorypage/InventoryPage";
 import PaymentsPage from "../pages/admin/paymentspage/PaymentsPage";
 import SecurityPage from "../pages/admin/securitypage/SecurityPage";
-import AdminModulePage from "../pages/admin/shared/AdminModulePage";
+import ReportsPage from "../pages/admin/reportspage/ReportsPage";
 import CatalogoPage from "../pages/customer/catalogopage/CatalogoPage";
 import ContractPage from "../pages/customer/contractpage/ContractPage";
 import FormPage from "../pages/customer/formpage/FormPage";
@@ -49,7 +48,7 @@ const AppRoutes = () => {
         <Route path="ordenes-dispositivo" element={<DeviceActionsPage />} />
         <Route path="cobranza" element={<CollectionsPage />} />
         <Route path="seguridad" element={<SecurityPage />} />
-        <Route path="reportes" element={<AdminModulePage title="Reportes" description="Visualiza colocación, cartera, recuperación, mora, inventario y desempeño de la operación." icon={<Landmark size={24} />} />} />
+        <Route path="reportes" element={<ReportsPage />} />
         <Route path="auditoria" element={<AuditPage />} />
       </Route>
 
