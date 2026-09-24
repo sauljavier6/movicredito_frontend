@@ -13,6 +13,7 @@ export interface CatalogProduct {
   camera?: string;
   price: number | string;
   imageUrl?: string;
+  imageUrls?: string[];
   supportsKnoxGuard?: boolean;
 }
 
