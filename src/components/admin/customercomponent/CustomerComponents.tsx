@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Pagination from "../shared/Pagination";
 import { Pencil, Search, UserRound, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -24,17 +25,19 @@ export default function CustomerComponents() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const pageSize=10;
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/customers`, {
+      const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(search.trim())params.set("search",search.trim());
+      const response = await fetch(`${API_URL}/api/customers?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const body = await response.json().catch(() => []);
       if (!response.ok) throw new Error(body?.message || "No fue posible consultar los clientes.");
-      setCustomers(Array.isArray(body) ? body : []);
+      setCustomers(body.items||[]);setTotal(body.pagination?.total||0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible consultar los clientes.");
       setCustomers([]);
@@ -43,18 +46,11 @@ export default function CustomerComponents() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id); }, [page,search]);
+  useEffect(()=>setPage(1),[search]);
 
   const save=async(e:React.FormEvent)=>{e.preventDefault();if(!editing)return;const r=await fetch(`${API_URL}/api/customers/${editing.id}`,{method:"PATCH",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(editing)});const b=await r.json().catch(()=>({}));if(!r.ok){setError(b.message||"No fue posible actualizar el cliente.");return;}setEditing(null);await queryClient.invalidateQueries({queryKey:["dashboard"]});await load();};
-  const filtered = useMemo(() => {
-    const value = search.trim().toLowerCase();
-    if (!value) return customers;
-    return customers.filter((customer) =>
-      [customer.fullName, customer.email, customer.phone, customer.curp, customer.rfc]
-        .filter(Boolean)
-        .some((field) => String(field).toLowerCase().includes(value)),
-    );
-  }, [customers, search]);
+
 
   return (
     <section className="min-h-screen bg-[#f5f5f7] px-4 py-8 md:px-8">
@@ -93,7 +89,7 @@ export default function CustomerComponents() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
-                {filtered.map((customer) => (
+                {customers.map((customer) => (
                   <tr key={customer.id} className="hover:bg-black/[0.015]">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -108,7 +104,7 @@ export default function CustomerComponents() {
                     <td className="px-6 py-4 text-black/45">{customer.createdAt ? new Date(customer.createdAt).toLocaleDateString("es-MX") : "—"}</td><td className="px-6 py-4"><button onClick={()=>setEditing({...customer})} className="rounded-full bg-[#f5f5f7] p-2"><Pencil size={14}/></button></td>
                   </tr>
                 ))}
-                {!loading && filtered.length === 0 && (
+                {!loading && customers.length === 0 && (
                   <tr><td colSpan={7} className="px-6 py-14 text-center text-black/35">No hay clientes para mostrar.</td></tr>
                 )}
                 {loading && (
@@ -116,7 +112,7 @@ export default function CustomerComponents() {
                 )}
               </tbody>
             </table>
-          </div>
+          </div><Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
       {editing&&<div className="fixed inset-0 z-[70] grid place-items-center bg-black/30 p-4 backdrop-blur-sm"><form onSubmit={save} className="w-full max-w-xl rounded-[30px] bg-white p-7 shadow-2xl"><div className="flex justify-between"><div><h2 className="text-xl font-semibold">Editar cliente</h2><p className="text-sm text-black/40">Actualiza los datos de contacto y expediente.</p></div><button type="button" onClick={()=>setEditing(null)} className="rounded-full bg-[#f5f5f7] p-2"><X size={17}/></button></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{(["fullName","email","phone","curp","rfc","address"] as const).map(k=><label key={k} className={k==="address"?"sm:col-span-2 text-sm":"text-sm"}>{({fullName:"Nombre",email:"Correo",phone:"Teléfono",curp:"CURP",rfc:"RFC",address:"Dirección"} as const)[k]}<input value={editing[k]||""} onChange={e=>setEditing({...editing,[k]:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3"/></label>)}<label className="text-sm">Estado<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-[#f5f5f7] px-4 py-3"><option value="active">Activo</option><option value="inactive">Inactivo</option></select></label></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setEditing(null)} className="rounded-full px-5 py-3 text-sm">Cancelar</button><button className="rounded-full bg-black px-6 py-3 text-sm text-white">Guardar cambios</button></div></form></div>}
