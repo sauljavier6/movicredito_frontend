@@ -61,10 +61,10 @@ const ProductCard = ({ product }: { product: CatalogProduct }) => {
         </div>
 
         <Link
-          to={`/formulario?productId=${product.id}`}
-          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-black px-5 py-3.5 text-sm font-medium text-white transition hover:bg-black/80"
+          to={`/equipo/${product.id}`}
+          className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-5 py-3.5 text-sm font-medium text-white shadow-md shadow-blue-600/15 transition hover:bg-blue-700"
         >
-          Simular y solicitar
+          Ver detalles
           <ArrowUpRight size={16} />
         </Link>
       </div>
