@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import Pagination from "../shared/Pagination";
 import type { FormEvent } from "react";
 import { Pencil, Plus, RefreshCw, Search, ShieldCheck } from "lucide-react";
 
@@ -42,15 +43,17 @@ export default function PhonesComponents() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const pageSize=10;
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/products/admin`, { headers: { Authorization: `Bearer ${token}` } });
+      const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(search.trim())params.set("search",search.trim());
+      const response = await fetch(`${API_URL}/api/products/admin?${params}`, { headers: { Authorization: `Bearer ${token}` } });
       const body = await response.json().catch(() => []);
       if (!response.ok) throw new Error(body?.message || "No fue posible consultar el catálogo.");
-      setProducts(Array.isArray(body) ? body : []);
+      setProducts(body.items||[]);setTotal(body.pagination?.total||0);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No fue posible consultar el catálogo.");
       setProducts([]);
@@ -59,13 +62,10 @@ export default function PhonesComponents() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id); }, [page,search]);
+  useEffect(()=>setPage(1),[search]);
 
-  const filtered = useMemo(() => {
-    const value = search.trim().toLowerCase();
-    if (!value) return products;
-    return products.filter((product) => `${product.brand} ${product.model} ${product.storage}`.toLowerCase().includes(value));
-  }, [products, search]);
+
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -163,7 +163,7 @@ export default function PhonesComponents() {
             <table className="w-full min-w-[940px] text-left text-sm">
               <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Equipo</th><th className="px-6 py-4">Precio</th><th className="px-6 py-4">Knox</th><th className="px-6 py-4">Estado</th><th className="px-6 py-4">Acciones</th></tr></thead>
               <tbody className="divide-y divide-black/5">
-                {filtered.map((product) => (
+                {products.map((product) => (
                   <tr key={product.id} className="hover:bg-black/[0.015]">
                     <td className="px-6 py-4"><p className="font-medium">{product.brand} {product.model}</p><p className="mt-0.5 text-xs text-black/40">{product.storage}{product.ram ? ` · ${product.ram} RAM` : ""}</p></td>
                     <td className="px-6 py-4 font-medium">{Number(product.price).toLocaleString("es-MX", { style: "currency", currency: "MXN" })}</td>
@@ -172,11 +172,11 @@ export default function PhonesComponents() {
                     <td className="px-6 py-4"><div className="flex gap-2"><button onClick={() => edit(product)} className="rounded-full bg-[#f5f5f7] px-4 py-2 text-xs font-medium">Editar</button><button onClick={() => void toggleActive(product)} className="rounded-full bg-[#f5f5f7] px-4 py-2 text-xs font-medium">{product.active ? "Desactivar" : "Activar"}</button></div></td>
                   </tr>
                 ))}
-                {!loading && filtered.length === 0 && <tr><td colSpan={5} className="px-6 py-14 text-center text-black/35">No hay equipos en el catálogo.</td></tr>}
+                {!loading && products.length === 0 && <tr><td colSpan={5} className="px-6 py-14 text-center text-black/35">No hay equipos en el catálogo.</td></tr>}
                 {loading && <tr><td colSpan={5} className="px-6 py-14 text-center text-black/35">Consultando catálogo…</td></tr>}
               </tbody>
             </table>
-          </div>
+          </div><Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
     </section>
