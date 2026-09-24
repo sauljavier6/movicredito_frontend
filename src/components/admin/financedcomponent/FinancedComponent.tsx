@@ -33,9 +33,6 @@ export default function FinancedComponent() {
   const [statementLoading,setStatementLoading]=useState(false);
   const headers = { Authorization: `Bearer ${token}` };
   const [credits, setCredits] = useState<Credit[]>([]);
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
