@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, LoaderCircle, PackageOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, LoaderCircle, PackageOpen, Search } from "lucide-react";
 import ProductCard, { type CatalogProduct } from "./ProductCard";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
@@ -9,7 +9,11 @@ const ProductList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const productsPerPage = 6;
+  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const productsPerPage = 9;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -18,10 +22,14 @@ const ProductList = () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${API_URL}/api/products`, { signal: controller.signal });
+        const params = new URLSearchParams({ page: String(currentPage), pageSize: String(productsPerPage) });
+        if (search) params.set("search", search);
+        const response = await fetch(`${API_URL}/api/products?${params.toString()}`, { signal: controller.signal });
         if (!response.ok) throw new Error("No pudimos cargar los equipos disponibles.");
         const data = await response.json();
-        setProducts(Array.isArray(data) ? data : []);
+        setProducts(Array.isArray(data?.items) ? data.items : []);
+        setTotalPages(data?.pagination?.totalPages || 1);
+        setTotal(data?.pagination?.total || 0);
       } catch (err) {
         if ((err as Error).name !== "AbortError") {
           setError((err as Error).message || "No pudimos cargar el catálogo.");
@@ -33,13 +41,8 @@ const ProductList = () => {
 
     void loadProducts();
     return () => controller.abort();
-  }, []);
+  }, [currentPage, search]);
 
-  const totalPages = Math.max(1, Math.ceil(products.length / productsPerPage));
-  const currentProducts = useMemo(() => {
-    const first = (currentPage - 1) * productsPerPage;
-    return products.slice(first, first + productsPerPage);
-  }, [currentPage, products]);
 
   if (loading) {
     return (
@@ -74,8 +77,14 @@ const ProductList = () => {
 
   return (
     <div>
+      <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); setSearch(searchInput.trim()); }} className="mb-8 flex max-w-xl items-center gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-sm">
+        <Search size={18} className="ml-2 text-black/35" />
+        <input value={searchInput} onChange={(e)=>setSearchInput(e.target.value)} placeholder="Buscar por marca, modelo o almacenamiento" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
+        <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Buscar</button>
+      </form>
+      <div className="mb-5 text-sm text-black/40">{total} {total === 1 ? "equipo disponible" : "equipos disponibles"}</div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {currentProducts.map((product) => (
+        {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
