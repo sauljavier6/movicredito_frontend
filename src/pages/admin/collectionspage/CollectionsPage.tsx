@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, BellRing, LockKeyhole, RefreshCw, ShieldAlert } from "lucide-react";
+import Pagination from "../../../components/admin/shared/Pagination";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -42,6 +43,7 @@ export default function CollectionsPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const token = sessionStorage.getItem("movicredito_token");
+  const [page,setPage]=useState(1); const pageSize=10;
 
   const loadPortfolio = async () => {
     if (!token) return;
@@ -86,6 +88,7 @@ export default function CollectionsPage() {
   }, []);
 
   const atRisk = useMemo(() => data?.results.filter((item) => item.recommendedAction !== "none") ?? [], [data]);
+  useEffect(()=>setPage(1),[data]);
 
   return (
     <section className="min-h-screen bg-[#f5f5f7] px-4 py-8 md:px-8">
@@ -120,7 +123,7 @@ export default function CollectionsPage() {
             <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Atraso máx.</th><th className="px-6 py-4">Cuotas vencidas</th><th className="px-6 py-4">Monto vencido</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Acción</th><th className="px-6 py-4 text-right">Orden</th></tr></thead>
               <tbody className="divide-y divide-black/5">
-                {atRisk.map((item) => (
+                {atRisk.slice((page-1)*pageSize,page*pageSize).map((item) => (
                   <tr key={item.creditId}>
                     <td className="px-6 py-4 font-mono text-xs">{item.creditId}</td>
                     <td className="px-6 py-4 font-semibold">{item.maxDaysLate} días</td>
@@ -141,6 +144,7 @@ export default function CollectionsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} total={atRisk.length} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
     </section>
