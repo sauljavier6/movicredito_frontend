@@ -2,3 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 @import "tailwindcss";
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #172033;
+  background: #f7fbff;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html { background: #f7fbff; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: linear-gradient(135deg, #f4faff 0%, #ffffff 46%, #f2f4ff 100%); }
+button, a, input, select, textarea { transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease, color .18s ease, transform .18s ease; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(37, 99, 235, .18); outline-offset: 2px; }
+
+@layer components {
+  .mc-page { @apply min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 text-slate-900; }
+  .mc-card { @apply rounded-3xl border border-blue-100 bg-white shadow-[0_18px_55px_-32px_rgba(37,99,235,0.45)]; }
+  .mc-card-hover { @apply transition duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-[0_24px_65px_-30px_rgba(37,99,235,0.5)]; }
+  .mc-panel { @apply rounded-3xl border border-blue-100 bg-gradient-to-br from-white to-blue-50/60; }
+  .mc-primary { @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 font-semibold text-white shadow-lg shadow-blue-600/15 hover:from-blue-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-50; }
+  .mc-secondary { @apply inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-4 py-2.5 font-semibold text-blue-700 hover:bg-blue-50; }
+  .mc-input { @apply w-full rounded-xl border border-blue-100 bg-white px-3 py-2.5 text-slate-800 shadow-sm placeholder:text-slate-400 focus:border-blue-400 focus:ring-4 focus:ring-blue-100; }
+  .mc-badge { @apply inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-inset ring-blue-100; }
+  .mc-section-title { @apply text-xl font-semibold tracking-tight text-slate-950; }
+}
+
+/* Refresh legacy neutral surfaces across existing modules without changing layout. */
+.bg-\[\#f5f5f7\] { background-color: #f3f8ff !important; }
+.bg-slate-50 { background-color: #f6faff !important; }
+.bg-gray-50 { background-color: #f6faff !important; }
+.border-slate-200, .border-gray-200 { border-color: #dbeafe !important; }
+.text-slate-500, .text-gray-500 { color: #52647d !important; }
+.text-slate-600, .text-gray-600 { color: #40536e !important; }
+.bg-slate-900 { background: linear-gradient(135deg, #1d4ed8, #4f46e5) !important; }
+.shadow-sm { box-shadow: 0 10px 32px -24px rgba(37, 99, 235, .42); }
+
+table thead { background: #eff6ff; }
+table thead th { color: #334e75; }
+table tbody tr { transition: background-color .15s ease; }
+table tbody tr:hover { background-color: rgba(239, 246, 255, .65); }
