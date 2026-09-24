@@ -25,7 +25,8 @@ type PortfolioResponse = {
     restrict: number;
     lock: number;
   };
-  results: CollectionItem[];
+  items: CollectionItem[];
+  pagination:{page:number;pageSize:number;total:number;totalPages:number};
 };
 
 const labels: Record<CollectionItem["recommendedAction"], string> = {
@@ -50,7 +51,7 @@ export default function CollectionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${API_URL}/api/collections/portfolio`, {
+      const response = await fetch(`${API_URL}/api/collections/portfolio?page=${page}&pageSize=${pageSize}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const body = await response.json().catch(() => ({}));
@@ -85,10 +86,9 @@ export default function CollectionsPage() {
 
   useEffect(() => {
     void loadPortfolio();
-  }, []);
+  }, [page]);
 
-  const atRisk = useMemo(() => data?.results.filter((item) => item.recommendedAction !== "none") ?? [], [data]);
-  useEffect(()=>setPage(1),[data]);
+  const atRisk = useMemo(() => data?.items ?? [], [data]);
 
   return (
     <section className="min-h-screen bg-[#f5f5f7] px-4 py-8 md:px-8">
@@ -123,7 +123,7 @@ export default function CollectionsPage() {
             <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Atraso máx.</th><th className="px-6 py-4">Cuotas vencidas</th><th className="px-6 py-4">Monto vencido</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Acción</th><th className="px-6 py-4 text-right">Orden</th></tr></thead>
               <tbody className="divide-y divide-black/5">
-                {atRisk.slice((page-1)*pageSize,page*pageSize).map((item) => (
+                {atRisk.map((item) => (
                   <tr key={item.creditId}>
                     <td className="px-6 py-4 font-mono text-xs">{item.creditId}</td>
                     <td className="px-6 py-4 font-semibold">{item.maxDaysLate} días</td>
@@ -144,7 +144,7 @@ export default function CollectionsPage() {
               </tbody>
             </table>
           </div>
-          <Pagination page={page} total={atRisk.length} pageSize={pageSize} onPageChange={setPage}/>
+          <Pagination page={page} total={data?.pagination?.total||0} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
     </section>
