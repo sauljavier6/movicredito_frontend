@@ -4,8 +4,8 @@ import { Link, useParams } from "react-router-dom";
 import type { CatalogProduct } from "../../../components/customer/product/ProductCard";
 const API_URL=import.meta.env.VITE_API_URL||"";
 export default function ProductDetailPage(){
- const {id}=useParams();const [p,setP]=useState<CatalogProduct|null>(null),[loading,setLoading]=useState(true);
- useEffect(()=>{const c=new AbortController();fetch(`${API_URL}/api/products/${id}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw new Error();setP(await r.json())}).catch(()=>setP(null)).finally(()=>setLoading(false));return()=>c.abort()},[id]);
+ const {id}=useParams();const [p,setP]=useState<CatalogProduct|null>(null),[loading,setLoading]=useState(true),[selectedImage,setSelectedImage]=useState("");
+ useEffect(()=>{const c=new AbortController();fetch(`${API_URL}/api/products/${id}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw new Error();const product=await r.json();setP(product);setSelectedImage(product.imageUrl||(product.imageUrls||[])[0]||"")}).catch(()=>setP(null)).finally(()=>setLoading(false));return()=>c.abort()},[id]);
  if(loading)return <div className="min-h-[70vh] grid place-items-center text-black/40">Cargando equipo…</div>;
  if(!p)return <div className="min-h-[70vh] grid place-items-center"><div className="text-center"><p className="text-xl font-semibold">Equipo no disponible</p><Link to="/#equipos" className="mt-4 inline-block text-blue-600">Volver al catálogo</Link></div></div>;
  const specs=[["Almacenamiento",p.storage,HardDrive],["Memoria RAM",p.ram,MemoryStick],["Procesador",p.processor,Cpu],["Pantalla",p.display,Monitor],["Batería",p.battery,Battery],["Cámara",p.camera,Camera]].filter(x=>x[1]);
