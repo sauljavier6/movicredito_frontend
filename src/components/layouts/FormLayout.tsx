@@ -1,29 +1,18 @@
 import { Outlet, Link } from "react-router-dom";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 const FormLayout = () => {
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f]">
+    <div className="min-h-screen bg-white text-[#151515]">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-xl">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black text-sm font-semibold text-white">
-              M
-            </div>
+            <img src="/logo.jpg" alt="MoviCrédito" className="h-10 w-10 rounded-xl object-cover shadow-sm" />
             <span className="text-[17px] font-semibold tracking-[-0.02em]">MoviCrédito</span>
           </Link>
 
-          <div className="flex items-center gap-2 sm:gap-5">
-            <Link to="/login" className="hidden text-sm font-medium text-black/65 transition hover:text-black sm:inline">
-              Administrar
-            </Link>
-            <Link
-              to="/formulario"
-              className="inline-flex items-center gap-2 rounded-full bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-black/80"
-            >
-              Solicitar crédito
-              <ArrowRight size={15} />
-            </Link>
+          <div className="flex items-center gap-5">
+            <a href="/#equipos" className="text-sm font-medium text-black/60 transition hover:text-black">Equipos</a>
           </div>
         </nav>
       </header>
