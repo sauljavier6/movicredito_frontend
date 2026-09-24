@@ -26,7 +26,8 @@ type ApiResponse = {
     mode: "simulation" | "live-ready";
     region?: string | null;
   };
-  actions: DeviceAction[];
+  items: DeviceAction[];
+  pagination:{page:number;pageSize:number;total:number;totalPages:number};
 };
 
 export default function DeviceActionsPage() {
@@ -56,7 +57,7 @@ export default function DeviceActionsPage() {
     setLoading(true);
     setError(null);
     try {
-      setData(await request("/api/device-actions"));
+      setData(await request(`/api/device-actions?page=${page}&pageSize=${pageSize}`));
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -66,7 +67,7 @@ export default function DeviceActionsPage() {
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [page]);
 
   const act = async (id: string, operation: "approve" | "process" | "cancel") => {
     setBusyId(id);
@@ -133,7 +134,7 @@ export default function DeviceActionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
-                {(data?.actions ?? []).slice((page-1)*pageSize,page*pageSize).map((item) => (
+                {(data?.items ?? []).map((item) => (
                   <tr key={item.id}>
                     <td className="px-6 py-4 text-xs text-black/45">{new Date(item.createdAt).toLocaleString("es-MX")}</td>
                     <td className="px-6 py-4 font-semibold capitalize">{item.action}</td>
@@ -151,11 +152,11 @@ export default function DeviceActionsPage() {
                     </td>
                   </tr>
                 ))}
-                {!data?.actions?.length && <tr><td colSpan={7} className="px-6 py-14 text-center text-black/35">Todavía no existen órdenes de dispositivo.</td></tr>}
+                {!data?.items?.length && <tr><td colSpan={7} className="px-6 py-14 text-center text-black/35">Todavía no existen órdenes de dispositivo.</td></tr>}
               </tbody>
             </table>
           </div>
-          <Pagination page={page} total={data?.actions?.length||0} pageSize={pageSize} onPageChange={setPage}/>
+          <Pagination page={page} total={data?.pagination?.total||0} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
     </section>
