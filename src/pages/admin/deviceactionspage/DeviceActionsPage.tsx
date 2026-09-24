@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, Play, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
+import Pagination from "../../../components/admin/shared/Pagination";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -33,6 +34,7 @@ export default function DeviceActionsPage() {
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [page,setPage]=useState(1); const pageSize=10;
   const token = sessionStorage.getItem("movicredito_token");
 
   const request = async (url: string, options?: RequestInit) => {
@@ -131,7 +133,7 @@ export default function DeviceActionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
-                {(data?.actions ?? []).map((item) => (
+                {(data?.actions ?? []).slice((page-1)*pageSize,page*pageSize).map((item) => (
                   <tr key={item.id}>
                     <td className="px-6 py-4 text-xs text-black/45">{new Date(item.createdAt).toLocaleString("es-MX")}</td>
                     <td className="px-6 py-4 font-semibold capitalize">{item.action}</td>
@@ -153,6 +155,7 @@ export default function DeviceActionsPage() {
               </tbody>
             </table>
           </div>
+          <Pagination page={page} total={data?.actions?.length||0} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
     </section>
