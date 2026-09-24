@@ -1,0 +1,19 @@
+import { useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, Battery, Camera, Cpu, HardDrive, MemoryStick, Monitor, ShieldCheck, Smartphone } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
+import type { CatalogProduct } from "../../../components/customer/product/ProductCard";
+const API_URL=import.meta.env.VITE_API_URL||"";
+export default function ProductDetailPage(){
+ const {id}=useParams();const [p,setP]=useState<CatalogProduct|null>(null),[loading,setLoading]=useState(true);
+ useEffect(()=>{const c=new AbortController();fetch(`${API_URL}/api/products/${id}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw new Error();setP(await r.json())}).catch(()=>setP(null)).finally(()=>setLoading(false));return()=>c.abort()},[id]);
+ if(loading)return <div className="min-h-[70vh] grid place-items-center text-black/40">Cargando equipo…</div>;
+ if(!p)return <div className="min-h-[70vh] grid place-items-center"><div className="text-center"><p className="text-xl font-semibold">Equipo no disponible</p><Link to="/#equipos" className="mt-4 inline-block text-blue-600">Volver al catálogo</Link></div></div>;
+ const specs=[["Almacenamiento",p.storage,HardDrive],["Memoria RAM",p.ram,MemoryStick],["Procesador",p.processor,Cpu],["Pantalla",p.display,Monitor],["Batería",p.battery,Battery],["Cámara",p.camera,Camera]].filter(x=>x[1]);
+ return <main className="bg-white px-5 py-10 sm:px-8 sm:py-16"><div className="mx-auto max-w-7xl"><Link to="/#equipos" className="inline-flex items-center gap-2 text-sm text-black/50 hover:text-black"><ArrowLeft size={16}/>Volver a equipos</Link><div className="mt-8 grid gap-12 lg:grid-cols-2 lg:items-start">
+ <div className="sticky top-24 flex min-h-[520px] items-center justify-center rounded-[36px] bg-gradient-to-br from-[#eef7ff] to-[#f8fbff] p-10">{p.imageUrl?<img src={p.imageUrl} alt={`${p.brand} ${p.model}`} className="max-h-[500px] w-full object-contain"/>:<Smartphone size={180} strokeWidth={.8} className="text-blue-200"/>}</div>
+ <div className="py-3"><p className="text-sm font-semibold uppercase tracking-[.14em] text-blue-600">{p.brand}</p><h1 className="mt-2 text-5xl font-semibold tracking-[-.05em]">{p.model}</h1><p className="mt-5 text-3xl font-semibold">${Number(p.price).toLocaleString("es-MX")} <span className="text-base font-normal text-black/35">MXN</span></p><p className="mt-3 max-w-xl text-sm leading-6 text-black/50">Selecciona este equipo para consultar los planes vigentes, calcular enganche y mensualidad y después iniciar tu solicitud.</p>
+ {p.supportsKnoxGuard&&<div className="mt-6 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700"><ShieldCheck size={16}/>Compatible con administración de dispositivo</div>}
+ <div className="mt-9 grid gap-3 sm:grid-cols-2">{specs.map(([label,value,Icon]:any)=><div key={label} className="rounded-2xl border border-black/5 bg-[#f8fafc] p-4"><Icon size={18} className="text-blue-600"/><p className="mt-3 text-xs uppercase tracking-wider text-black/35">{label}</p><p className="mt-1 text-sm font-semibold">{value}</p></div>)}</div>
+ <Link to={`/formulario?productId=${p.id}`} className="mt-9 inline-flex w-full items-center justify-center gap-2 rounded-full bg-blue-600 px-6 py-4 font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">Simular financiamiento y solicitar <ArrowRight size={17}/></Link>
+ </div></div></div></main>
+}
