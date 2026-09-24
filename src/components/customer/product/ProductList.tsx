@@ -65,29 +65,22 @@ const ProductList = () => {
     );
   }
 
-  if (!products.length) {
-    return (
-      <div className="rounded-[30px] border border-black/5 bg-[#f5f5f7] px-6 py-14 text-center">
-        <PackageOpen className="mx-auto mb-4 text-black/20" size={38} />
-        <p className="font-medium text-[#1d1d1f]">Próximamente nuevos equipos</p>
-        <p className="mx-auto mt-2 max-w-md text-sm text-black/45">El catálogo se actualizará en cuanto haya equipos activos disponibles para financiamiento.</p>
-      </div>
-    );
-  }
-
   return (
     <div>
       <form onSubmit={(e) => { e.preventDefault(); setCurrentPage(1); setSearch(searchInput.trim()); }} className="mb-8 flex max-w-xl items-center gap-2 rounded-2xl border border-black/10 bg-white p-2 shadow-sm">
         <Search size={18} className="ml-2 text-black/35" />
         <input value={searchInput} onChange={(e)=>setSearchInput(e.target.value)} placeholder="Buscar por marca, modelo o almacenamiento" className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none" />
+        {searchInput && <button type="button" onClick={()=>{setSearchInput("");setSearch("");setCurrentPage(1);}} className="rounded-xl px-3 py-2 text-sm font-medium text-black/45 hover:bg-black/5">Limpiar</button>}
         <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Buscar</button>
       </form>
+      {products.length ? <>
       <div className="mb-5 text-sm text-black/40">{total} {total === 1 ? "equipo disponible" : "equipos disponibles"}</div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
+      </> : <div className="rounded-[30px] border border-blue-100 bg-blue-50/50 px-6 py-12 text-center"><PackageOpen className="mx-auto mb-4 text-blue-300" size={38}/><p className="font-semibold text-[#1d1d1f]">{search ? `No encontramos equipos para “${search}”` : "Próximamente nuevos equipos"}</p><p className="mx-auto mt-2 max-w-md text-sm text-black/45">{search ? "Prueba con otra marca, modelo o almacenamiento, o limpia la búsqueda para volver a ver todo el catálogo." : "El catálogo se actualizará en cuanto haya equipos activos disponibles."}</p>{search&&<button onClick={()=>{setSearch("");setSearchInput("");setCurrentPage(1);}} className="mt-5 rounded-full bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700">Ver todos los equipos</button>}</div>}
 
       {totalPages > 1 && (
         <div className="mt-10 flex justify-center">
