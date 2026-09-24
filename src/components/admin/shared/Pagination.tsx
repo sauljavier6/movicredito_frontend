@@ -1,0 +1,6 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+export default function Pagination({page,total,pageSize=10,onPageChange}:{page:number;total:number;pageSize?:number;onPageChange:(page:number)=>void}){
+ const pages=Math.max(1,Math.ceil(total/pageSize)); if(total<=pageSize)return null;
+ const start=(page-1)*pageSize+1,end=Math.min(total,page*pageSize);
+ return <div className="flex flex-col gap-3 border-t border-black/5 px-5 py-4 text-sm sm:flex-row sm:items-center sm:justify-between"><p className="text-xs text-black/40">Mostrando {start}–{end} de {total}</p><div className="flex items-center gap-2"><button disabled={page<=1} onClick={()=>onPageChange(page-1)} className="grid h-9 w-9 place-items-center rounded-full bg-[#f5f5f7] disabled:opacity-30"><ChevronLeft size={16}/></button><span className="min-w-20 text-center text-xs font-medium">Página {page} de {pages}</span><button disabled={page>=pages} onClick={()=>onPageChange(page+1)} className="grid h-9 w-9 place-items-center rounded-full bg-[#f5f5f7] disabled:opacity-30"><ChevronRight size={16}/></button></div></div>
+}
