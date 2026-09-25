@@ -77,14 +77,14 @@ const AppLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f5f7] text-[#1d1d1f]">
-      <header className="sticky top-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-xl">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 text-slate-900">
+      <header className="sticky top-0 z-50 border-b border-blue-100 bg-white/90 shadow-sm shadow-blue-100/50 backdrop-blur-xl">
         <div className="mx-auto flex h-[72px] max-w-[1680px] items-center justify-between px-4 md:px-7">
           <Link to="/admin" className="flex items-center gap-3">
             <img src="/logo.jpg" alt="MoviCrédito" className="h-10 w-10 rounded-xl object-cover" />
             <div>
               <p className="font-semibold tracking-[-0.025em]">MoviCrédito</p>
-              <p className="text-[11px] text-black/35">Control Center</p>
+              <p className="text-[11px] font-medium text-blue-600/70">Control Center</p>
             </div>
           </Link>
 
@@ -93,7 +93,7 @@ const AppLayout = () => {
               <p className="text-sm font-medium">{user?.fullName || "Administrador"}</p>
               <p className="text-[11px] capitalize text-black/35">{user?.role || "usuario"}</p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 text-xs font-semibold text-white shadow-md shadow-blue-500/20">
               {(user?.fullName || "M").charAt(0).toUpperCase()}
             </div>
           </div>
@@ -111,9 +111,9 @@ const AppLayout = () => {
 
       <div className="mx-auto flex max-w-[1680px]">
         <aside
-          className={`${menuOpen ? "block" : "hidden"} fixed inset-x-0 top-[72px] z-40 max-h-[calc(100vh-72px)] overflow-y-auto border-b border-black/5 bg-white p-4 md:sticky md:top-[72px] md:block md:h-[calc(100vh-72px)] md:w-72 md:shrink-0 md:border-b-0 md:border-r md:bg-[#f5f5f7] md:p-5`}
+          className={`${menuOpen ? "block" : "hidden"} fixed inset-x-0 top-[72px] z-40 max-h-[calc(100vh-72px)] overflow-y-auto border-b border-blue-100 bg-white p-4 md:sticky md:top-[72px] md:block md:h-[calc(100vh-72px)] md:w-72 md:shrink-0 md:border-b-0 md:border-r md:border-blue-100 md:bg-gradient-to-b md:from-white md:via-blue-50/70 md:to-indigo-50/70 md:p-5`}
         >
-          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-black/30">Operación</p>
+          <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-600/70">Operación</p>
           <nav className="space-y-1">
             {navigation.map(({ to, label, icon: Icon }) => (
               <Link
@@ -121,33 +121,33 @@ const AppLayout = () => {
                 to={to}
                 onClick={() => setMenuOpen(false)}
                 className={`group flex items-center justify-between rounded-2xl px-3.5 py-3 text-sm font-medium transition ${
-                  isActive(to) ? "bg-white text-black shadow-sm" : "text-black/50 hover:bg-white/70 hover:text-black"
+                  isActive(to) ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20" : "text-slate-600 hover:bg-white hover:text-blue-700 hover:shadow-sm"
                 }`}
               >
                 <span className="flex items-center gap-3">
                   <Icon size={18} strokeWidth={1.8} />
                   {label}
                 </span>
-                {isActive(to) && <ChevronRight size={15} className="text-black/30" />}
+                {isActive(to) && <ChevronRight size={15} className="text-white/70" />}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-7 border-t border-black/5 pt-5">
-            <Link to="/" className="block rounded-2xl px-3.5 py-3 text-sm text-black/45 transition hover:bg-white hover:text-black">
+          <div className="mt-7 border-t border-blue-100 pt-5">
+            <Link to="/" className="block rounded-2xl px-3.5 py-3 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-blue-700 hover:shadow-sm">
               Ver portal público
             </Link>
             <button
               type="button"
               onClick={logout}
-              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm text-black/45 transition hover:bg-white hover:text-black"
+              className="mt-1 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-left text-sm font-medium text-slate-600 transition hover:bg-white hover:text-red-600 hover:shadow-sm"
             >
               <LogOut size={17} /> Cerrar sesión
             </button>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 bg-white md:rounded-tl-[32px]">
+        <main className="min-w-0 flex-1 bg-white/80 md:rounded-tl-[32px] md:shadow-[-18px_0_50px_-42px_rgba(37,99,235,0.55)]">
           <Outlet />
         </main>
       </div>
