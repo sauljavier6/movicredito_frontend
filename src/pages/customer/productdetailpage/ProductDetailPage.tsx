@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Battery, Camera, Cpu, HardDrive, MemoryStick, Monitor, ShieldCheck, Smartphone } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import type { CatalogProduct } from "../../../components/customer/product/ProductCard";
-const API_URL=import.meta.env.VITE_API_URL||"";\nconst imageSrc=(url?:string)=>!url?"":url.startsWith("/")?`${API_URL}${url}`:url;
+const API_URL=import.meta.env.VITE_API_URL||"";
+const imageSrc=(url?:string)=>!url?"":url.startsWith("/")?`${API_URL}${url}`:url;
 export default function ProductDetailPage(){
  const {id}=useParams();const [p,setP]=useState<CatalogProduct|null>(null),[loading,setLoading]=useState(true),[selectedImage,setSelectedImage]=useState("");
  useEffect(()=>{const c=new AbortController();fetch(`${API_URL}/api/products/${id}`,{signal:c.signal}).then(async r=>{if(!r.ok)throw new Error();const product=await r.json();setP(product);setSelectedImage((product.imageUrls||[])[0]||product.imageUrl||"")}).catch(()=>setP(null)).finally(()=>setLoading(false));return()=>c.abort()},[id]);
