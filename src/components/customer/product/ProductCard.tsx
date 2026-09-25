@@ -17,8 +17,12 @@ export interface CatalogProduct {
   supportsKnoxGuard?: boolean;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "";\nconst imageSrc = (url?: string) => !url ? "" : url.startsWith("/") ? `${API_URL}${url}` : url;\n\nconst ProductCard = ({ product }: { product: CatalogProduct }) => {
-  const price = Number(product.price);\n  const coverImage = product.imageUrl || product.imageUrls?.[0] || "";
+const API_URL = import.meta.env.VITE_API_URL || "";
+const imageSrc = (url?: string) => !url ? "" : url.startsWith("/") ? `${API_URL}${url}` : url;
+
+const ProductCard = ({ product }: { product: CatalogProduct }) => {
+  const price = Number(product.price);
+  const coverImage = product.imageUrl || product.imageUrls?.[0] || "";
 
   return (
     <article className="group overflow-hidden rounded-[30px] border border-black/5 bg-[#f5f5f7] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(0,0,0,0.09)]">
