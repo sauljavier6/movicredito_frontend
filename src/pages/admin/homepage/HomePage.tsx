@@ -21,19 +21,19 @@ export default function HomePage() {
     {label:"Equipos financiados",value:data?String(data.metrics.financedDevices):"—",detail:"Dispositivos asignados",icon:Smartphone},
   ];
   return (
-    <div className="min-h-[calc(100vh-72px)] bg-white px-6 py-8 sm:px-8 lg:px-12 lg:py-11">
+    <div className="min-h-[calc(100vh-72px)] bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-6 py-8 sm:px-8 lg:px-12 lg:py-11">
       <div className="mx-auto max-w-7xl">
-        <div className="flex flex-col gap-5 border-b border-black/5 pb-8 sm:flex-row sm:items-end sm:justify-between">
+        <div className="flex flex-col gap-5 border-b border-blue-100 pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-black/30">Resumen operativo</p>
             <h1 className="mt-3 text-4xl font-semibold tracking-[-0.05em] text-[#1d1d1f] sm:text-5xl">Todo bajo control.</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-black/45">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
               Solicitudes, cartera, cobranza y dispositivos en una vista simple. Los indicadores se alimentan directamente de la operación registrada en MoviCrédito.
             </p>
           </div>
           <div className="flex gap-2"><a
             href="/admin/solicitudes"
-            className="inline-flex w-fit items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-black/80"
+            className="inline-flex w-fit items-center gap-2 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/15 transition hover:bg-black/80"
           >
             Revisar solicitudes <ArrowUpRight size={16} />
           </a></div>
@@ -41,32 +41,32 @@ export default function HomePage() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {metrics.map(({ label, value, detail, icon: Icon }) => (
-            <article key={label} className="rounded-[26px] border border-black/5 bg-[#f5f5f7] p-6">
+            <article key={label} className="rounded-[26px] border border-blue-100 bg-white p-6 shadow-[0_18px_55px_-32px_rgba(37,99,235,0.45)]">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-black/45">{label}</p>
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-black/45 shadow-sm">
+                <p className="text-sm font-medium text-slate-600">{label}</p>
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-slate-600 shadow-sm">
                   <Icon size={18} strokeWidth={1.8} />
                 </div>
               </div>
               <p className="mt-8 text-4xl font-semibold tracking-[-0.045em] text-[#1d1d1f]">{value}</p>
-              <p className="mt-2 text-xs text-black/35">{detail}</p>
+              <p className="mt-2 text-xs text-blue-900/45">{detail}</p>
             </article>
           ))}
         </div>
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[1.35fr_.65fr]">
-          <section className="rounded-[30px] border border-black/5 bg-white p-7 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
+          <section className="rounded-[30px] border border-blue-100 bg-white p-7 shadow-[0_18px_60px_rgba(0,0,0,0.05)]">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-semibold">Actividad financiera</p>
-                <p className="mt-1 text-xs text-black/35">Últimos movimientos relevantes</p>
+                <p className="mt-1 text-xs text-blue-900/45">Últimos movimientos relevantes</p>
               </div>
-              <span className="rounded-full bg-[#f5f5f7] px-3 py-1.5 text-xs text-black/40">Datos reales</span>
+              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs text-slate-500">Datos reales</span>
             </div>
-            <div className="mt-8 min-h-56 overflow-hidden rounded-[24px] bg-[#f5f5f7]">{error?<div className="p-6 text-sm text-red-600">{error instanceof Error?error.message:"No fue posible cargar el dashboard."}</div>:data?.recentPayments.length?<div className="divide-y divide-black/5">{data.recentPayments.map(p=><div key={p.id} className="flex items-center justify-between px-5 py-4"><div><p className="text-sm font-medium">{p.type==="down_payment"?"Enganche":"Pago de crédito"}</p><p className="text-xs capitalize text-black/35">{p.method} · {new Date(p.paidAt).toLocaleString("es-MX")}</p></div><p className="font-semibold">${Number(p.amount).toLocaleString("es-MX",{minimumFractionDigits:2})}</p></div>)}</div>:<div className="flex min-h-56 items-center justify-center text-sm text-black/35">Sin pagos aplicados todavía.</div>}</div>
+            <div className="mt-8 min-h-56 overflow-hidden rounded-[24px] bg-blue-50">{error?<div className="p-6 text-sm text-red-600">{error instanceof Error?error.message:"No fue posible cargar el dashboard."}</div>:data?.recentPayments.length?<div className="divide-y divide-black/5">{data.recentPayments.map(p=><div key={p.id} className="flex items-center justify-between px-5 py-4"><div><p className="text-sm font-medium">{p.type==="down_payment"?"Enganche":"Pago de crédito"}</p><p className="text-xs capitalize text-blue-900/45">{p.method} · {new Date(p.paidAt).toLocaleString("es-MX")}</p></div><p className="font-semibold">${Number(p.amount).toLocaleString("es-MX",{minimumFractionDigits:2})}</p></div>)}</div>:<div className="flex min-h-56 items-center justify-center text-sm text-blue-900/45">Sin pagos aplicados todavía.</div>}</div>
           </section>
 
-          <section className="rounded-[30px] bg-[#1d1d1f] p-7 text-white">
+          <section className="rounded-[30px] bg-gradient-to-br from-blue-700 via-blue-600 to-indigo-600 p-7 text-white shadow-[0_24px_60px_-24px_rgba(37,99,235,0.65)]">
             <p className="text-sm font-semibold">Seguridad de dispositivos</p>
             <p className="mt-2 text-sm leading-6 text-white/45">Estado de enrolamiento, restricciones y equipos financiados.</p>
             <div className="mt-10 space-y-3">
