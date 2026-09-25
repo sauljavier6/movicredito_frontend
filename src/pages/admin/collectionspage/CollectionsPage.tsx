@@ -91,15 +91,15 @@ export default function CollectionsPage() {
   const atRisk = useMemo(() => data?.items ?? [], [data]);
 
   return (
-    <section className="min-h-screen bg-[#f5f5f7] px-4 py-8 md:px-8">
+    <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4 py-8 md:px-8">
       <div className="mx-auto max-w-7xl">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-medium text-black/40">Recuperación de cartera</p>
+            <p className="text-sm font-medium text-slate-500">Recuperación de cartera</p>
             <h1 className="mt-1 text-4xl font-semibold tracking-[-0.045em] text-[#1d1d1f]">Cobranza</h1>
-            <p className="mt-2 text-sm text-black/45">Evalúa atrasos y prioriza acciones antes de cualquier restricción del equipo.</p>
+            <p className="mt-2 text-sm text-slate-600">Evalúa atrasos y prioriza acciones antes de cualquier restricción del equipo.</p>
           </div>
-          <button onClick={() => void loadPortfolio()} className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium shadow-sm ring-1 ring-black/5">
+          <button onClick={() => void loadPortfolio()} className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium shadow-sm ring-1 ring-blue-100">
             <RefreshCw size={16} /> {loading ? "Evaluando…" : "Actualizar cartera"}
           </button>
         </div>
@@ -114,14 +114,14 @@ export default function CollectionsPage() {
           <Metric label="Bloqueo sugerido" value={String(data?.summary.lock ?? 0)} icon={<LockKeyhole size={18} />} />
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-black/5">
-          <div className="border-b border-black/5 px-6 py-5">
+        <div className="mt-6 overflow-hidden rounded-[28px] bg-white shadow-sm ring-1 ring-blue-100">
+          <div className="border-b border-blue-100 px-6 py-5">
             <h2 className="font-semibold">Prioridad de cobranza</h2>
-            <p className="mt-1 text-xs text-black/40">Crear una orden no bloquea el equipo: primero debe aprobarse y procesarse desde Órdenes de dispositivo.</p>
+            <p className="mt-1 text-xs text-slate-500">Crear una orden no bloquea el equipo: primero debe aprobarse y procesarse desde Órdenes de dispositivo.</p>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] text-left text-sm">
-              <thead className="bg-[#fafafa] text-xs uppercase tracking-wide text-black/35"><tr><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Atraso máx.</th><th className="px-6 py-4">Cuotas vencidas</th><th className="px-6 py-4">Monto vencido</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Acción</th><th className="px-6 py-4 text-right">Orden</th></tr></thead>
+              <thead className="bg-blue-50 text-xs uppercase tracking-wide text-blue-900/45"><tr><th className="px-6 py-4">Crédito</th><th className="px-6 py-4">Atraso máx.</th><th className="px-6 py-4">Cuotas vencidas</th><th className="px-6 py-4">Monto vencido</th><th className="px-6 py-4">Saldo</th><th className="px-6 py-4">Acción</th><th className="px-6 py-4 text-right">Orden</th></tr></thead>
               <tbody className="divide-y divide-black/5">
                 {atRisk.map((item) => (
                   <tr key={item.creditId}>
@@ -130,7 +130,7 @@ export default function CollectionsPage() {
                     <td className="px-6 py-4">{item.overdueCount}</td>
                     <td className="px-6 py-4">${item.overdueAmount.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td>
                     <td className="px-6 py-4">${item.balance.toLocaleString("es-MX", { minimumFractionDigits: 2 })}</td>
-                    <td className="px-6 py-4"><span className={`inline-flex max-w-[150px] items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-xs font-medium leading-tight ${item.recommendedAction === "lock" ? "bg-red-50 text-red-700" : item.recommendedAction === "restrict" ? "bg-amber-50 text-amber-700" : "bg-[#f5f5f7] text-black/60"}`}>{labels[item.recommendedAction]}</span></td>
+                    <td className="px-6 py-4"><span className={`inline-flex max-w-[150px] items-center justify-center whitespace-normal rounded-full px-3 py-1.5 text-center text-xs font-medium leading-tight ${item.recommendedAction === "lock" ? "bg-red-50 text-red-700" : item.recommendedAction === "restrict" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-black/60"}`}>{labels[item.recommendedAction]}</span></td>
                     <td className="px-6 py-4 text-right">
                       {(["restrict", "lock"] as string[]).includes(item.recommendedAction) ? (
                         <button disabled={queueingId === item.creditId} onClick={() => void queueAction(item.creditId)} className="rounded-full bg-black px-3.5 py-2 text-xs font-medium text-white transition hover:bg-black/75 disabled:opacity-40">
@@ -140,7 +140,7 @@ export default function CollectionsPage() {
                     </td>
                   </tr>
                 ))}
-                {!atRisk.length && <tr><td colSpan={7} className="px-6 py-12 text-center text-black/35">No hay créditos que requieran acción de cobranza.</td></tr>}
+                {!atRisk.length && <tr><td colSpan={7} className="px-6 py-12 text-center text-blue-900/45">No hay créditos que requieran acción de cobranza.</td></tr>}
               </tbody>
             </table>
           </div>
@@ -152,5 +152,5 @@ export default function CollectionsPage() {
 }
 
 function Metric({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
-  return <div className="rounded-[24px] bg-white p-5 shadow-sm ring-1 ring-black/5"><div className="flex items-center justify-between text-black/40"><span className="text-xs font-medium uppercase tracking-[0.12em]">{label}</span>{icon}</div><p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#1d1d1f]">{value}</p></div>;
+  return <div className="rounded-[24px] bg-white p-5 shadow-sm ring-1 ring-blue-100"><div className="flex items-center justify-between text-slate-500"><span className="text-xs font-medium uppercase tracking-[0.12em]">{label}</span>{icon}</div><p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-[#1d1d1f]">{value}</p></div>;
 }
