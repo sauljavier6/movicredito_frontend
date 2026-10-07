@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ImagePlus, Pencil, Plus, RefreshCw, Search, Trash2, X } from "lucide-react";
 import Pagination from "../../../components/admin/shared/Pagination";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -39,6 +40,7 @@ export default function InventoryPage(){
     setSummary(Array.isArray(sb)?sb:[]);
   };
   useEffect(()=>{const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id);},[page,search]);
+  useAutoRefresh(()=>load(),15000);
 
   const summaryMap=useMemo(()=>new Map(summary.map(x=>[x.productId,x])),[summary]);
 
