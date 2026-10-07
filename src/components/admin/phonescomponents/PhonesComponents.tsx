@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Pagination from "../shared/Pagination";
 import type { FormEvent } from "react";
 import { Pencil, Plus, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -45,8 +46,8 @@ export default function PhonesComponents() {
   const [error, setError] = useState<string | null>(null);
   const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const pageSize=10;
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(search.trim())params.set("search",search.trim());
@@ -58,12 +59,13 @@ export default function PhonesComponents() {
       setError(err instanceof Error ? err.message : "No fue posible consultar el catálogo.");
       setProducts([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id); }, [page,search]);
   useEffect(()=>setPage(1),[search]);
+  useAutoRefresh(()=>load(true),15000);
 
 
 
