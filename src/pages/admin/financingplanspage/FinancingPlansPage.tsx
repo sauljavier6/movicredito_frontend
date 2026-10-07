@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, Plus, X } from "lucide-react";
 import Pagination from "../../../components/admin/shared/Pagination";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -54,6 +55,7 @@ export default function FinancingPlansPage() {
   };
 
   useEffect(() => { void load(); }, [page]);
+  useAutoRefresh(()=>load(),15000);
 
   const createPlan = async () => {
     setBusy(true);
