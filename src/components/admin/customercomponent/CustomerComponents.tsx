@@ -68,7 +68,7 @@ export default function CustomerComponents() {
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Nombre, correo, teléfono, CURP o RFC"
+            placeholder="ID, nombre, correo, teléfono, CURP o RFC"
             className="min-w-0 flex-1 bg-transparent px-2 py-2 text-sm outline-none"
           />
         </div>
@@ -80,6 +80,7 @@ export default function CustomerComponents() {
             <table className="w-full min-w-[960px] text-left text-sm">
               <thead className="bg-blue-50 text-xs uppercase tracking-wide text-blue-900/45">
                 <tr>
+                  <th className="px-6 py-4">ID cliente</th>
                   <th className="px-6 py-4">Cliente</th>
                   <th className="px-6 py-4">Teléfono</th>
                   <th className="px-6 py-4">CURP</th>
@@ -91,6 +92,7 @@ export default function CustomerComponents() {
               <tbody className="divide-y divide-black/5">
                 {customers.map((customer) => (
                   <tr key={customer.id} className="hover:bg-blue-50/70">
+                    <td className="px-6 py-4"><span className="rounded-lg bg-slate-100 px-2.5 py-1.5 font-mono text-xs font-semibold text-slate-700" title={customer.id}>{customer.id.split("-")[0].toUpperCase()}</span></td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="grid h-9 w-9 place-items-center rounded-full bg-blue-50 text-slate-600"><UserRound size={16} /></div>
@@ -105,17 +107,17 @@ export default function CustomerComponents() {
                   </tr>
                 ))}
                 {!loading && customers.length === 0 && (
-                  <tr><td colSpan={7} className="px-6 py-14 text-center text-blue-900/45">No hay clientes para mostrar.</td></tr>
+                  <tr><td colSpan={8} className="px-6 py-14 text-center text-blue-900/45">No hay clientes para mostrar.</td></tr>
                 )}
                 {loading && (
-                  <tr><td colSpan={6} className="px-6 py-14 text-center text-blue-900/45">Consultando clientes…</td></tr>
+                  <tr><td colSpan={8} className="px-6 py-14 text-center text-blue-900/45">Consultando clientes…</td></tr>
                 )}
               </tbody>
             </table>
           </div><Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage}/>
         </div>
       </div>
-      {editing&&<div className="fixed inset-0 z-[70] grid place-items-center bg-black/30 p-4 backdrop-blur-sm"><form onSubmit={save} className="w-full max-w-xl rounded-[30px] bg-white p-7 shadow-2xl"><div className="flex justify-between"><div><h2 className="text-xl font-semibold">Editar cliente</h2><p className="text-sm text-slate-500">Actualiza los datos de contacto y expediente.</p></div><button type="button" onClick={()=>setEditing(null)} className="rounded-full bg-blue-50 p-2"><X size={17}/></button></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{(["fullName","email","phone","curp","rfc","address"] as const).map(k=><label key={k} className={k==="address"?"sm:col-span-2 text-sm":"text-sm"}>{({fullName:"Nombre",email:"Correo",phone:"Teléfono",curp:"CURP",rfc:"RFC",address:"Dirección"} as const)[k]}<input value={editing[k]||""} onChange={e=>setEditing({...editing,[k]:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-blue-50 px-4 py-3"/></label>)}<label className="text-sm">Estado<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-blue-50 px-4 py-3"><option value="active">Activo</option><option value="inactive">Inactivo</option></select></label></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setEditing(null)} className="rounded-full px-5 py-3 text-sm">Cancelar</button><button className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/15">Guardar cambios</button></div></form></div>}
+      {editing&&<div className="fixed inset-0 z-[70] grid place-items-center bg-black/30 p-4 backdrop-blur-sm"><form onSubmit={save} className="w-full max-w-xl rounded-[30px] bg-white p-7 shadow-2xl"><div className="flex justify-between"><div><h2 className="text-xl font-semibold">Editar cliente</h2><p className="text-sm text-slate-500">ID cliente: <span className="font-mono font-semibold text-slate-700">{editing.id.split("-")[0].toUpperCase()}</span></p><p className="text-sm text-slate-500">Actualiza los datos de contacto y expediente.</p></div><button type="button" onClick={()=>setEditing(null)} className="rounded-full bg-blue-50 p-2"><X size={17}/></button></div><div className="mt-6 grid gap-4 sm:grid-cols-2">{(["fullName","email","phone","curp","rfc","address"] as const).map(k=><label key={k} className={k==="address"?"sm:col-span-2 text-sm":"text-sm"}>{({fullName:"Nombre",email:"Correo",phone:"Teléfono",curp:"CURP",rfc:"RFC",address:"Dirección"} as const)[k]}<input value={editing[k]||""} onChange={e=>setEditing({...editing,[k]:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-blue-50 px-4 py-3"/></label>)}<label className="text-sm">Estado<select value={editing.status} onChange={e=>setEditing({...editing,status:e.target.value})} className="mt-2 w-full rounded-2xl border border-black/10 bg-blue-50 px-4 py-3"><option value="active">Activo</option><option value="inactive">Inactivo</option></select></label></div><div className="mt-6 flex justify-end gap-3"><button type="button" onClick={()=>setEditing(null)} className="rounded-full px-5 py-3 text-sm">Cancelar</button><button className="rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/15">Guardar cambios</button></div></form></div>}
     </section>
   );
 }
