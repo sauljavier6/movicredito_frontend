@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import Pagination from "../shared/Pagination";
 import { Eye, Pencil, Search, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -38,14 +39,15 @@ export default function FinancedComponent() {
   const [error, setError] = useState<string | null>(null);
   const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const pageSize=10;
 
-  const load = async () => {
-    setLoading(true);setError(null);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);setError(null);
     try{const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(search.trim())params.set("search",search.trim());const response=await fetch(`${API_URL}/api/credits?${params}`,{headers});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||"No fue posible consultar los créditos.");setCredits(body.items||[]);setTotal(body.pagination?.total||0);}
-    catch(err){setError(err instanceof Error?err.message:"No fue posible consultar los créditos.");setCredits([]);}finally{setLoading(false);}
+    catch(err){setError(err instanceof Error?err.message:"No fue posible consultar los créditos.");setCredits([]);}finally{if(!silent)setLoading(false);}
   };
 
   useEffect(() => { const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id); }, [page,search]);
   useEffect(()=>setPage(1),[search]);
+  useAutoRefresh(()=>load(true),15000);
 
   const openStatement=async(id:string)=>{setStatementLoading(true);setError(null);try{const r=await fetch(`${API_URL}/api/credits/${id}/schedule`,{headers});const b=await r.json().catch(()=>({}));if(!r.ok)throw new Error(b.message||"No fue posible consultar el estado de cuenta.");setStatement(b);}catch(e){setError((e as Error).message);}finally{setStatementLoading(false);}};
   const save=async(e:React.FormEvent)=>{e.preventDefault();if(!editing)return;const r=await fetch(`${API_URL}/api/credits/${editing.id}`,{method:"PATCH",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({status:editing.status,startDate:editing.startDate})});const b=await r.json().catch(()=>({}));if(!r.ok){setError(b.message||"No fue posible actualizar el crédito.");return;}setEditing(null);await queryClient.invalidateQueries({queryKey:["dashboard"]});await load();};
