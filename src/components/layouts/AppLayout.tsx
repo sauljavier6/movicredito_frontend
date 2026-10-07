@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import { clearMoviCreditoSession, restoreMoviCreditoSession } from "../../utils/session";
+import { useAutoRefresh } from "../../hooks/useAutoRefresh";
 
 const navigation = [
   { to: "/admin", label: "Inicio", icon: LayoutDashboard },
@@ -44,6 +45,7 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const [authChecking, setAuthChecking] = useState(true);
   const [token, setToken] = useState(() => sessionStorage.getItem("movicredito_token"));
+  const [supportUnread, setSupportUnread] = useState(0);
   const storedUser = sessionStorage.getItem("movicredito_user");
 
   const user = useMemo(() => {
@@ -64,6 +66,31 @@ const AppLayout = () => {
     });
     return () => { active = false; };
   }, []);
+
+  const loadSupportUnread = async () => {
+    if (!token) return;
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ""}/api/support`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return;
+      const body = await response.json();
+      const unread = (body.items || []).reduce(
+        (total: number, ticket: { unread?: number }) => total + Number(ticket.unread || 0),
+        0,
+      );
+      setSupportUnread(unread);
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (token) void loadSupportUnread();
+    const refresh = () => void loadSupportUnread();
+    window.addEventListener("movicredito:support-read", refresh);
+    return () => window.removeEventListener("movicredito:support-read", refresh);
+  }, [token]);
+
+  useAutoRefresh(loadSupportUnread, 3000);
 
   if (authChecking) return <div className="flex min-h-screen items-center justify-center bg-[#f5f5f7] text-sm text-black/45">Restaurando sesión…</div>;
   if (!token) return <Navigate to="/login?reason=session-expired" replace />;
@@ -91,6 +118,19 @@ const AppLayout = () => {
           </Link>
 
           <div className="hidden items-center gap-3 md:flex">
+            <Link
+              to="/admin/soporte"
+              className="relative mr-1 flex h-10 w-10 items-center justify-center rounded-full border border-blue-100 bg-white text-slate-600 transition hover:bg-blue-50 hover:text-blue-700"
+              aria-label={supportUnread > 0 ? `${supportUnread} mensaje(s) de soporte sin leer` : "Soporte"}
+              title={supportUnread > 0 ? `${supportUnread} mensaje(s) de soporte sin leer` : "Soporte"}
+            >
+              <BellRing size={19} />
+              {supportUnread > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-white">
+                  {supportUnread > 99 ? "99+" : supportUnread}
+                </span>
+              )}
+            </Link>
             <div className="text-right">
               <p className="text-sm font-medium">{user?.fullName || "Administrador"}</p>
               <p className="text-[11px] capitalize text-black/35">{user?.role || "usuario"}</p>
@@ -126,8 +166,15 @@ const AppLayout = () => {
                   isActive(to) ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/20" : "text-slate-600 hover:bg-white hover:text-blue-700 hover:shadow-sm"
                 }`}
               >
-                <span className="flex items-center gap-3">
-                  <Icon size={18} strokeWidth={1.8} />
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="relative shrink-0">
+                    <Icon size={18} strokeWidth={1.8} />
+                    {to === "/admin/soporte" && supportUnread > 0 && (
+                      <span className={`absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold ${isActive(to) ? "bg-white text-blue-700" : "bg-red-500 text-white"}`}>
+                        {supportUnread > 99 ? "99+" : supportUnread}
+                      </span>
+                    )}
+                  </span>
                   {label}
                 </span>
                 {isActive(to) && <ChevronRight size={15} className="text-white/70" />}
