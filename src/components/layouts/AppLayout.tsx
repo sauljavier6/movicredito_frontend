@@ -15,6 +15,7 @@ import {
   Menu,
   Smartphone,
   ShieldCheck,
+  MessageCircle,
   Users,
   X,
 } from "lucide-react";
@@ -31,6 +32,7 @@ const navigation = [
   { to: "/admin/dispositivos", label: "Dispositivos financiados", icon: Smartphone },
   { to: "/admin/ordenes-dispositivo", label: "Órdenes de dispositivo", icon: ListChecks },
   { to: "/admin/cobranza", label: "Cobranza", icon: BellRing },
+  { to: "/admin/soporte", label: "Soporte", icon: MessageCircle },
   { to: "/admin/reportes", label: "Reportes", icon: BarChart3 },
   { to: "/admin/auditoria", label: "Auditoría", icon: History },
   { to: "/admin/seguridad", label: "Seguridad", icon: ShieldCheck },
