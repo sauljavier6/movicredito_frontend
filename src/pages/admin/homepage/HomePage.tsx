@@ -13,6 +13,8 @@ export default function HomePage() {
     staleTime:0,
     refetchOnMount:"always",
     refetchOnWindowFocus:true,
+    refetchInterval:15000,
+    refetchIntervalInBackground:false,
   });
   const metrics=[
     {label:"Clientes",value:data?String(data.metrics.customers):"—",detail:"Clientes registrados",icon:Users},
