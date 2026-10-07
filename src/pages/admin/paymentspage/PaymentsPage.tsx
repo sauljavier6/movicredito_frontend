@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { CreditCard, Eye, Plus, X } from "lucide-react";
 import Pagination from "../../../components/admin/shared/Pagination";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -42,9 +43,9 @@ export default function PaymentsPage() {
   const token = sessionStorage.getItem("movicredito_token");
   const [page,setPage]=useState(1); const pageSize=10; const [total,setTotal]=useState(0);
 
-  const loadPayments = async () => {
+  const loadPayments = async (silent = false) => {
     if (!token) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/payments?page=${page}&pageSize=${pageSize}`, { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error("No fue posible consultar los pagos.");
@@ -52,7 +53,7 @@ export default function PaymentsPage() {
     } catch (error) {
       setMessage((error as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -67,6 +68,7 @@ export default function PaymentsPage() {
   };
   useEffect(() => { void loadPayments(); }, [page]);
   useEffect(() => { void loadCredits(); }, []);
+  useAutoRefresh(async()=>{await Promise.all([loadPayments(true),loadCredits()]);},15000);
 
   const openPayment = async (payment:Payment) => {
     if (!token) return;
