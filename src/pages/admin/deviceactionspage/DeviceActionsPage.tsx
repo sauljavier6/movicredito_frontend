@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, Play, RefreshCw, ShieldCheck, XCircle } from "lucide-react";
 import Pagination from "../../../components/admin/shared/Pagination";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -52,22 +53,23 @@ export default function DeviceActionsPage() {
     return body;
   };
 
-  const load = async () => {
+  const load = async (silent = false) => {
     if (!token) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
     try {
       setData(await request(`/api/device-actions?page=${page}&pageSize=${pageSize}`));
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
     void load();
   }, [page]);
+  useAutoRefresh(()=>load(true),15000);
 
   const act = async (id: string, operation: "approve" | "process" | "cancel") => {
     setBusyId(id);
