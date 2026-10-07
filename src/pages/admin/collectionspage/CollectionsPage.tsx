@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, BellRing, LockKeyhole, RefreshCw, ShieldAlert } from "lucide-react";
 import Pagination from "../../../components/admin/shared/Pagination";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -46,9 +47,9 @@ export default function CollectionsPage() {
   const token = sessionStorage.getItem("movicredito_token");
   const [page,setPage]=useState(1); const pageSize=10;
 
-  const loadPortfolio = async () => {
+  const loadPortfolio = async (silent = false) => {
     if (!token) return;
-    setLoading(true);
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const response = await fetch(`${API_URL}/api/collections/portfolio?page=${page}&pageSize=${pageSize}`, {
@@ -60,7 +61,7 @@ export default function CollectionsPage() {
     } catch (err) {
       setError((err as Error).message);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -87,6 +88,7 @@ export default function CollectionsPage() {
   useEffect(() => {
     void loadPortfolio();
   }, [page]);
+  useAutoRefresh(()=>loadPortfolio(true),15000);
 
   const atRisk = useMemo(() => data?.items ?? [], [data]);
 
