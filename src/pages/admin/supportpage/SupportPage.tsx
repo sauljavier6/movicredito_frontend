@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { MessageCircle, RefreshCw, Send } from "lucide-react";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 const API_URL=import.meta.env.VITE_API_URL||"";
 type Customer={id:string;customerNumber:string;fullName:string;email:string;phone:string};
 type Ticket={id:string;subject:string;category:string;status:string;priority:string;lastMessageAt?:string;createdAt:string;unread:number;customer:Customer|null};
@@ -12,6 +13,7 @@ export default function SupportPage(){
  const send=async()=>{if(!selected||!reply.trim())return;setBusy(true);const r=await fetch(`${API_URL}/api/support/${selected.id}/messages`,{method:"POST",headers:json,body:JSON.stringify({message:reply.trim()})});setBusy(false);if(r.ok){setReply("");await open(selected);}};
  const status=async(value:string)=>{if(!selected)return;await fetch(`${API_URL}/api/support/${selected.id}`,{method:"PATCH",headers:json,body:JSON.stringify({status:value})});setSelected({...selected,status:value});await load();};
  useEffect(()=>{void load();},[]);
+ useAutoRefresh(async()=>{await load();if(selected){const r=await fetch(`${API_URL}/api/support/${selected.id}/messages`,{headers});if(r.ok){const b=await r.json();setMessages(b.messages||[]);}}},5000);
  return <section className="min-h-screen px-4 py-8 md:px-8"><div className="mx-auto max-w-7xl">
   <div className="flex items-end justify-between"><div><p className="text-sm text-slate-500">Atención al cliente</p><h1 className="mt-1 text-4xl font-semibold tracking-[-0.045em]">Centro de soporte</h1><p className="mt-2 text-sm text-slate-600">Consultas y mensajes enviados desde la app de MoviCrédito.</p></div><button onClick={()=>void load()} className="rounded-full bg-white p-3 shadow-sm"><RefreshCw size={18}/></button></div>
   <div className="mt-7 grid min-h-[650px] overflow-hidden rounded-[28px] bg-white shadow-sm lg:grid-cols-[380px_1fr]">
