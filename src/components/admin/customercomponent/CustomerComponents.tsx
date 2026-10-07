@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Pagination from "../shared/Pagination";
 import { Pencil, Search, UserRound, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 
@@ -27,8 +28,8 @@ export default function CustomerComponents() {
   const [error, setError] = useState<string | null>(null);
   const [page,setPage]=useState(1);const [total,setTotal]=useState(0);const pageSize=10;
 
-  const load = async () => {
-    setLoading(true);
+  const load = async (silent = false) => {
+    if (!silent) setLoading(true);
     setError(null);
     try {
       const params=new URLSearchParams({page:String(page),pageSize:String(pageSize)});if(search.trim())params.set("search",search.trim());
@@ -42,12 +43,13 @@ export default function CustomerComponents() {
       setError(err instanceof Error ? err.message : "No fue posible consultar los clientes.");
       setCustomers([]);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => { const id=setTimeout(()=>void load(),250);return()=>clearTimeout(id); }, [page,search]);
   useEffect(()=>setPage(1),[search]);
+  useAutoRefresh(()=>load(true),15000);
 
   const save=async(e:React.FormEvent)=>{e.preventDefault();if(!editing)return;const r=await fetch(`${API_URL}/api/customers/${editing.id}`,{method:"PATCH",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},body:JSON.stringify(editing)});const b=await r.json().catch(()=>({}));if(!r.ok){setError(b.message||"No fue posible actualizar el cliente.");return;}setEditing(null);await queryClient.invalidateQueries({queryKey:["dashboard"]});await load();};
 
