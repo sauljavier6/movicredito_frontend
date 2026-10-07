@@ -2,6 +2,7 @@ import Pagination from "../../../components/admin/shared/Pagination";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, ClipboardCheck, Eye, ExternalLink, FileText, ShieldCheck, X } from "lucide-react";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL=import.meta.env.VITE_API_URL||"";
 type Application={id:string;folio:string;fullName:string;email:string;phone:string;productId:number;downPayment:number|string;termMonths:number;monthlyIncome:number|string;status:string;curp?:string;rfc?:string};
@@ -27,7 +28,9 @@ export default function ApplicationsPage(){
  const [selectedId,setSelectedId]=useState<string|null>(null),[review,setReview]=useState<Review|null>(null),[fulfillment,setFulfillment]=useState<Fulfillment|null>(null),[contract,setContract]=useState<Contract|null>(null),[downPayment,setDownPayment]=useState<DownPayment|null>(null);
  const [selectedDeviceId,setSelectedDeviceId]=useState(""),[decisionReason,setDecisionReason]=useState(""),[busy,setBusy]=useState<string|null>(null),[message,setMessage]=useState<string|null>(null),[checkoutUrl,setCheckoutUrl]=useState<string|null>(null),[contractPublicUrl,setContractPublicUrl]=useState<string|null>(null);
  const load=async()=>{const[a,p,d]=await Promise.all([fetch(`${API_URL}/api/credit-applications?page=${page}&pageSize=${pageSize}`,{headers:authHeaders}),fetch(`${API_URL}/api/products`),fetch(`${API_URL}/api/devices?page=1&pageSize=100`,{headers:authHeaders})]);if(a.ok){const b=await a.json();setApplications(b.items||[]);setTotal(b.pagination?.total||0);}if(p.ok){const b=await p.json();setProducts(Array.isArray(b)?b:(b.items||[]));}if(d.ok){const b=await d.json();setDevices(b.items||[]);}};
- useEffect(()=>{void load();},[page]); const productMap=useMemo(()=>new Map(products.map(p=>[p.id,p])),[products]);
+ useEffect(()=>{void load();},[page]);
+ useAutoRefresh(()=>load(),15000);
+ const productMap=useMemo(()=>new Map(products.map(p=>[p.id,p])),[products]);
  const loadFulfillment=async(id:string)=>{const[f,c,p]=await Promise.all([fetch(`${API_URL}/api/credit-applications/${id}/fulfillment`,{headers:authHeaders}),fetch(`${API_URL}/api/credit-applications/${id}/contract`,{headers:authHeaders}),fetch(`${API_URL}/api/down-payments/applications/${id}`,{headers:authHeaders})]);if(f.ok){const b=await f.json();setFulfillment(b);setSelectedDeviceId(b.deviceId||"");}else setFulfillment(null);setContract(c.ok?await c.json():null);if(p.ok){const payment=await p.json();setDownPayment(payment);setCheckoutUrl(payment.checkout?.initPoint||payment.checkout?.sandboxInitPoint||payment.providerPayload?.initPoint||payment.providerPayload?.sandboxInitPoint||null);}else{setDownPayment(null);setCheckoutUrl(null);}};
  const openReview=async(id:string)=>{setSelectedId(id);setReview(null);setFulfillment(null);setContract(null);setDownPayment(null);setCheckoutUrl(null);setDecisionReason("");setMessage(null);const r=await fetch(`${API_URL}/api/credit-applications/${id}/review`,{headers:authHeaders});const b=await r.json().catch(()=>({}));if(!r.ok){setMessage(b.message||"No fue posible cargar el expediente.");return;}setReview(b);if(b.application?.status==="approved")await loadFulfillment(id);};
  const evaluateRisk=async()=>{if(!selectedId)return;setBusy("risk");const r=await fetch(`${API_URL}/api/risk/applications/${selectedId}/evaluate`,{method:"POST",headers:authHeaders});const b=await r.json().catch(()=>({}));setBusy(null);if(!r.ok){setMessage(b.message||"No fue posible evaluar el riesgo.");return;}await openReview(selectedId);};
