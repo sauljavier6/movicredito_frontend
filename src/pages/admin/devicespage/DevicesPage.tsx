@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Eye, Search, Smartphone, X } from "lucide-react";
 import Pagination from "../../../components/admin/shared/Pagination";
+import { useAutoRefresh } from "../../../hooks/useAutoRefresh";
 
 const API_URL = import.meta.env.VITE_API_URL || "";
 const statusText:Record<string,string>={assigned:"Asignado",locked:"Bloqueado",reserved:"Reservado",available:"Disponible",retired:"Retirado",active:"Administrado",restricted:"Restringido",released:"Liberado",pending:"Pendiente",unenrolled:"Sin enrolar"};
@@ -19,6 +20,7 @@ export default function DevicesPage(){
 
   const load=async()=>{const p=new URLSearchParams({page:String(page),pageSize:String(pageSize),financedOnly:"true"});if(query.trim())p.set("search",query.trim());const r=await fetch(`${API_URL}/api/devices?${p}`,{headers});if(r.ok){const b=await r.json();setDevices(b.items||[]);setTotal(b.pagination?.total||0);}};
   useEffect(()=>{void load();},[page]);
+  useAutoRefresh(()=>load(),15000);
   const search=async()=>{setError(null);setPage(1);await load();};
 
   return <section className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4 py-8 md:px-8"><div className="mx-auto max-w-7xl">
