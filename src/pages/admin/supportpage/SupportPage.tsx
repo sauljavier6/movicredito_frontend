@@ -23,7 +23,35 @@ export default function SupportPage(){
  const send=async()=>{if(!selected||!reply.trim())return;const text=reply.trim();const optimistic:Msg={id:`local-${Date.now()}`,senderType:"admin",message:text,createdAt:new Date().toISOString()};setReply("");setMessages(current=>[...current,optimistic]);scrollToBottom();setBusy(true);const r=await fetch(`${API_URL}/api/support/${selected.id}/messages`,{method:"POST",headers:json,body:JSON.stringify({message:text})});setBusy(false);if(r.ok){const refreshed=await fetch(`${API_URL}/api/support/${selected.id}/messages`,{headers});if(refreshed.ok){const b=await refreshed.json();setMessages(b.messages||[]);scrollToBottom();}await load();}else{setMessages(current=>current.filter(m=>m.id!==optimistic.id));setReply(text);}};
  const status=async(value:string)=>{if(!selected)return;await fetch(`${API_URL}/api/support/${selected.id}`,{method:"PATCH",headers:json,body:JSON.stringify({status:value})});setSelected({...selected,status:value});await load();};
  useEffect(()=>{void load();},[]);
- useAutoRefresh(async()=>{await load();if(selected){const keepPinned=isNearBottom();const r=await fetch(`${API_URL}/api/support/${selected.id}/messages`,{headers});if(r.ok){const b=await r.json();const next:Msg[]=b.messages||[];setMessages(current=>{const currentLast=current.at(-1)?.id;const nextLast=next.at(-1)?.id;if(current.length===next.length&&currentLast===nextLast)return current;if(keepPinned)scrollToBottom();return next;});}}},3000);
+ const refreshThread=async()=>{
+   await load();
+   if(!selected)return;
+   const keepPinned=isNearBottom();
+   const r=await fetch(`${API_URL}/api/support/${selected.id}/messages`,{headers});
+   if(!r.ok)return;
+   const b=await r.json();
+   const next:Msg[]=b.messages||[];
+   const currentLast=messages.at(-1)?.id;
+   const nextLast=next.at(-1)?.id;
+   if(messages.length===next.length&&currentLast===nextLast)return;
+   setMessages(next);
+   if(keepPinned)scrollToBottom();
+ };
+ useEffect(()=>{
+   const onChange=(event:Event)=>{
+     const changed=(event as CustomEvent<{ticketId:string}>).detail;
+     if(!changed?.ticketId||changed.ticketId===selected?.id)void refreshThread();
+     else void load();
+   };
+   const onConnect=()=>void refreshThread();
+   window.addEventListener("movicredito:support-changed",onChange);
+   window.addEventListener("movicredito:support-connected",onConnect);
+   return ()=>{
+     window.removeEventListener("movicredito:support-changed",onChange);
+     window.removeEventListener("movicredito:support-connected",onConnect);
+   };
+ },[selected,messages]);
+ useAutoRefresh(refreshThread,30000);
  return <section className="h-[calc(100vh-72px)] overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50 px-4 py-5 md:px-8 md:py-6"><div className="mx-auto flex h-full max-w-7xl min-h-0 flex-col">
   <div><p className="text-sm text-slate-500">Atención al cliente</p><h1 className="mt-1 text-4xl font-semibold tracking-[-0.045em]">Centro de soporte</h1><p className="mt-2 text-sm text-slate-600">Consultas y mensajes enviados desde la app de MoviCrédito.</p></div>
   <div className="mt-5 grid min-h-0 flex-1 overflow-hidden rounded-[22px] bg-white shadow-sm ring-1 ring-blue-100 lg:grid-cols-[380px_1fr]">
