@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { clearMoviCreditoSession, restoreMoviCreditoSession } from "../../utils/session";
 import { useAutoRefresh } from "../../hooks/useAutoRefresh";
+import { io } from "socket.io-client";
 
 const navigation = [
   { to: "/admin", label: "Inicio", icon: LayoutDashboard },
@@ -90,7 +91,27 @@ const AppLayout = () => {
     return () => window.removeEventListener("movicredito:support-read", refresh);
   }, [token]);
 
-  useAutoRefresh(loadSupportUnread, 3000);
+  useEffect(() => {
+    if (!token) return;
+    const socket = io(import.meta.env.VITE_API_URL || window.location.origin, {
+      path: "/socket.io",
+      auth: { token },
+      transports: ["websocket", "polling"],
+      reconnection: true,
+    });
+    const onSupport = (event: { ticketId: string }) => {
+      window.dispatchEvent(new CustomEvent("movicredito:support-changed", { detail: event }));
+      void loadSupportUnread();
+    };
+    socket.on("support:changed", onSupport);
+    socket.on("connect", () => {
+      window.dispatchEvent(new Event("movicredito:support-connected"));
+      void loadSupportUnread();
+    });
+    return () => { socket.disconnect(); };
+  }, [token]);
+
+  useAutoRefresh(loadSupportUnread, 30000);
 
   if (authChecking) return <div className="flex min-h-screen items-center justify-center bg-[#f5f5f7] text-sm text-black/45">Restaurando sesión…</div>;
   if (!token) return <Navigate to="/login?reason=session-expired" replace />;
